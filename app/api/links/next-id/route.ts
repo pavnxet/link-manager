@@ -5,14 +5,14 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    // Fetch the last 50 links created to determine the next sequence number.
-    // This assumes the user adds links somewhat sequentially and the max number isn't too far back in history.
-    // Ideally, we'd use a SQL function or a separate counter, but this approach works without extra DB setup.
+    // Fetch all link titles to find the global maximum numeric ID.
+    // This is necessary because 'title' is a text field and can contain non-numeric values.
+    // We select only the 'title' column to minimize data transfer.
+    // While scanning the whole table is O(N), for a personal knowledge hub (even with 10k+ links),
+    // retrieving just the titles is very fast.
     const { data, error } = await supabase
       .from('links')
       .select('title')
-      .order('created_at', { ascending: false })
-      .limit(50)
 
     if (error) {
       console.error('Error fetching links for next ID:', error)
@@ -22,7 +22,7 @@ export async function GET() {
     let maxId = 0
     if (data && data.length > 0) {
       for (const link of data) {
-        // Check if title is a pure number
+        // Check if title is a pure number (no decimals, no spaces)
         if (/^\d+$/.test(link.title)) {
           const num = parseInt(link.title, 10)
           if (!isNaN(num) && num > maxId) {

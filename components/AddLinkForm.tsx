@@ -6,9 +6,10 @@ import { Link } from './LinkTable'
 
 interface AddLinkFormProps {
   onLinkAdded: (link: Link) => void
+  refreshTrigger: number
 }
 
-export default function AddLinkForm({ onLinkAdded }: AddLinkFormProps) {
+export default function AddLinkForm({ onLinkAdded, refreshTrigger }: AddLinkFormProps) {
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
   const [pageTitle, setPageTitle] = useState('')
@@ -16,10 +17,10 @@ export default function AddLinkForm({ onLinkAdded }: AddLinkFormProps) {
   const [loading, setLoading] = useState(false)
   const [scraping, setScraping] = useState(false)
 
-  // Fetch next ID on mount
+  // Fetch next ID on mount and when refreshTrigger changes
   useEffect(() => {
     fetchNextId()
-  }, [])
+  }, [refreshTrigger])
 
   const fetchNextId = async () => {
     try {

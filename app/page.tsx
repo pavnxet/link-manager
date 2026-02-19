@@ -10,6 +10,7 @@ export default function Dashboard() {
   const [links, setLinks] = useState<Link[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   const fetchLinks = async (query = '') => {
     setLoading(true)
@@ -73,6 +74,11 @@ export default function Dashboard() {
     setLinks([newLink, ...links])
   }
 
+  const handleRestoreComplete = () => {
+      fetchLinks(searchQuery)
+      setRefreshTrigger(prev => prev + 1)
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 p-4 md:p-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -82,12 +88,12 @@ export default function Dashboard() {
              <p className="text-gray-400 mt-1">Personal Knowledge Hub</p>
           </div>
           <div className="flex items-center gap-4">
-            <BackupRestore onRestoreComplete={() => fetchLinks(searchQuery)} />
+            <BackupRestore onRestoreComplete={handleRestoreComplete} />
           </div>
         </header>
 
         {/* Add Link Form */}
-        <AddLinkForm onLinkAdded={handleLinkAdded} />
+        <AddLinkForm onLinkAdded={handleLinkAdded} refreshTrigger={refreshTrigger} />
 
         <div className="space-y-4">
           <div className="relative group">
