@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { AUTH_COOKIE_NAME } from '@/lib/constants'
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -14,7 +15,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const token = request.cookies.get('auth-token')
+  const token = request.cookies.get(AUTH_COOKIE_NAME)
 
   if (!token) {
     const loginUrl = new URL('/login', request.url)
