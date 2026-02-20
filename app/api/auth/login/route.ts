@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { getExpectedToken } from '@/lib/auth'
 
 export async function POST(req: Request) {
   try {
@@ -14,9 +15,12 @@ export async function POST(req: Request) {
     }
 
     if (username === adminUsername && password === adminPassword) {
+      // Generate secure token
+      const token = await getExpectedToken()
+
       // Set cookie
       const cookieStore = await cookies()
-      cookieStore.set('auth-token', 'authenticated', {
+      cookieStore.set('auth-token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         path: '/',

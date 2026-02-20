@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { verifyToken } from '@/lib/auth'
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Skip middleware for these paths
@@ -15,8 +16,9 @@ export function middleware(request: NextRequest) {
   }
 
   const token = request.cookies.get('auth-token')
+  const isAuthenticated = await verifyToken(token?.value)
 
-  if (!token) {
+  if (!isAuthenticated) {
     const loginUrl = new URL('/login', request.url)
     return NextResponse.redirect(loginUrl)
   }

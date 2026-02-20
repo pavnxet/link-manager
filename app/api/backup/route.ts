@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { verifyAuth } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
+    const isAuthenticated = await verifyAuth()
+
+    if (!isAuthenticated) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { data, error } = await supabase
       .from('links')
       .select('*')
@@ -24,6 +31,12 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const isAuthenticated = await verifyAuth()
+
+    if (!isAuthenticated) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await req.json()
 
     if (!Array.isArray(body)) {
