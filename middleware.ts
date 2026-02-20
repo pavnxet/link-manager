@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { verifyToken } from '@/lib/auth'
 import { AUTH_COOKIE_NAME } from '@/lib/constants'
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Skip middleware for these paths
@@ -18,6 +19,12 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get(AUTH_COOKIE_NAME)
 
   if (!token) {
+    const loginUrl = new URL('/login', request.url)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  const payload = await verifyToken(token.value)
+  if (!payload) {
     const loginUrl = new URL('/login', request.url)
     return NextResponse.redirect(loginUrl)
   }
