@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { calculateMaxId } from '@/lib/link-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,18 +20,7 @@ export async function GET() {
       return NextResponse.json({ nextId: 1 })
     }
 
-    let maxId = 0
-    if (data && data.length > 0) {
-      for (const link of data) {
-        // Check if title is a pure number (no decimals, no spaces)
-        if (/^\d+$/.test(link.title)) {
-          const num = parseInt(link.title, 10)
-          if (!isNaN(num) && num > maxId) {
-            maxId = num
-          }
-        }
-      }
-    }
+    const maxId = calculateMaxId(data)
 
     return NextResponse.json({ nextId: maxId + 1 })
   } catch (error) {
