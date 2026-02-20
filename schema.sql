@@ -16,3 +16,16 @@ CREATE TABLE IF NOT EXISTS links (
 CREATE INDEX IF NOT EXISTS links_title_idx ON links USING GIN (to_tsvector('english', title));
 CREATE INDEX IF NOT EXISTS links_page_title_idx ON links USING GIN (to_tsvector('english', page_title));
 CREATE INDEX IF NOT EXISTS links_url_idx ON links (url);
+
+-- Function to get the maximum numeric ID from titles
+CREATE OR REPLACE FUNCTION get_max_numeric_id()
+RETURNS INTEGER AS $$
+BEGIN
+  RETURN COALESCE(
+    (SELECT MAX(title::INTEGER)
+     FROM links
+     WHERE title ~ '^[0-9]+$'),
+    0
+  );
+END;
+$$ LANGUAGE plpgsql;
