@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { signToken } from '@/lib/auth'
 
 export async function POST(req: Request) {
   try {
@@ -14,9 +15,11 @@ export async function POST(req: Request) {
     }
 
     if (username === adminUsername && password === adminPassword) {
-      // Set cookie
+      const token = await signToken({ role: 'admin' })
       const cookieStore = await cookies()
-      cookieStore.set('auth-token', 'authenticated', {
+
+      // Set cookie
+      cookieStore.set('auth-token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         path: '/',
