@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { db } from '@/lib/db'
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -7,20 +7,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const body = await req.json()
     const { title, page_title, url, category } = body
 
-    const { error } = await supabase
-      .from('links')
-      .update({ title, page_title, url, category })
-      .eq('id', id)
-
-    if (error) {
-      console.error('Update error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    await db.updateLink(id, { title, page_title, url, category })
 
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Internal error:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Update error:', error)
+    return NextResponse.json({ error: error.message || 'Error updating link' }, { status: 500 })
   }
 }
 
@@ -28,19 +20,11 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   try {
     const { id } = await params
 
-    const { error } = await supabase
-      .from('links')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      console.error('Delete error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    await db.deleteLink(id)
 
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Internal error:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Delete error:', error)
+    return NextResponse.json({ error: error.message || 'Error deleting link' }, { status: 500 })
   }
 }
