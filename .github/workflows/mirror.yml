@@ -2,7 +2,8 @@ name: Mirror to Codeberg
 
 on:
   push:
-    branches: [ "gemini-flash-link-manager-v2.0" ]  # adjust to your branch
+    branches:
+      - gemini-flash-link-manager-v2.0   # Trigger only on pushes to this branch
 
 jobs:
   mirror:
@@ -11,7 +12,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history and branches
+          fetch-depth: 0   # Fetch all branches and tags
 
       - name: Mirror to Codeberg
         env:
@@ -24,5 +25,6 @@ jobs:
 
           git remote add mirror git@codeberg.org:pavnxet/link-manager.git
 
-          # Push all remote-tracking branches (from origin) to Codeberg as real branches
-          git push --force --prune mirror "refs/remotes/origin/*:refs/heads/*" "refs/tags/*:refs/tags/*"
+          # Push all remote-tracking branches (from GitHub) as real branches on Codeberg
+          # --force ensures updates; --prune is removed to avoid deleting the default branch
+          git push --force mirror "refs/remotes/origin/*:refs/heads/*" "refs/tags/*:refs/tags/*"
