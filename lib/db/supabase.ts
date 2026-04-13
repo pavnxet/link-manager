@@ -1,9 +1,9 @@
-import { supabase } from '../supabase';
+import { getSupabase } from '../supabase';
 import { DbClient, Link, LinkInsert, LinkUpdate } from '../db';
 
 export class SupabaseDbClient implements DbClient {
   async getLinks(query?: string | null): Promise<Link[]> {
-    let dbQuery = supabase
+    let dbQuery = getSupabase()
       .from('links')
       .select('*')
       .order('created_at', { ascending: false });
@@ -22,7 +22,7 @@ export class SupabaseDbClient implements DbClient {
   }
 
   async getLinkById(id: string): Promise<Link | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('links')
       .select('*')
       .eq('id', id)
@@ -39,7 +39,7 @@ export class SupabaseDbClient implements DbClient {
   }
 
   async addLink(link: LinkInsert): Promise<Link> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('links')
       .insert([
         {
@@ -60,7 +60,7 @@ export class SupabaseDbClient implements DbClient {
   }
 
   async updateLink(id: string, link: LinkUpdate): Promise<Link> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('links')
       .update(link)
       .eq('id', id)
@@ -75,7 +75,7 @@ export class SupabaseDbClient implements DbClient {
   }
 
   async deleteLink(id: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('links')
       .delete()
       .eq('id', id);
@@ -86,7 +86,7 @@ export class SupabaseDbClient implements DbClient {
   }
 
   async getNextNumericId(): Promise<number> {
-    const { data: maxId, error } = await supabase.rpc('get_max_numeric_id');
+    const { data: maxId, error } = await getSupabase().rpc('get_max_numeric_id');
 
     if (error) {
       console.error('Error fetching next ID via RPC:', error);
@@ -97,7 +97,7 @@ export class SupabaseDbClient implements DbClient {
   }
 
   async getAllLinksForBackup(): Promise<Link[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('links')
       .select('*')
       .order('created_at', { ascending: true });
@@ -118,7 +118,7 @@ export class SupabaseDbClient implements DbClient {
       created_at: link.created_at || new Date().toISOString(),
     }));
 
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('links')
       .upsert(linksToInsert, { onConflict: 'url', ignoreDuplicates: true });
 

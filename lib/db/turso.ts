@@ -133,7 +133,7 @@ export class TursoDbClient implements DbClient {
       // but a simple approach for SQLite without REGEXP:
       // Since `title` containing only digits will convert to an integer nicely, we can do:
       const { rows } = await client.execute({
-         sql: `SELECT MAX(CAST(title AS INTEGER)) as maxId 
+        sql: `SELECT MAX(CAST(title AS INTEGER)) as maxId 
                FROM links 
                WHERE title = CAST(CAST(title AS INTEGER) AS TEXT)`
       });
@@ -157,14 +157,14 @@ export class TursoDbClient implements DbClient {
 
   async bulkInsertLinks(links: LinkInsert[]): Promise<{ success: boolean; count: number }> {
     const client = getTursoClient();
-    
+
     // SQLite upsert: INSERT INTO ... ON CONFLICT(url) DO NOTHING
     const statements = links.map(link => {
       const id = crypto.randomUUID();
       const created_at = link.created_at || new Date().toISOString();
       const category = link.category || '🔗 #Link';
       const page_title = link.page_title || '';
-      
+
       return {
         sql: `INSERT INTO links (id, title, page_title, url, category, created_at)
               VALUES (?, ?, ?, ?, ?, ?)
