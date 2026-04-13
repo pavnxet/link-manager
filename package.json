@@ -10,6 +10,7 @@
     "test": "node --experimental-strip-types --import ./test/register-hooks.mjs --test app/**/*.test.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.2",
     "@supabase/supabase-js": "^2.97.0",
     "cheerio": "^1.2.0",
     "clsx": "^2.1.1",

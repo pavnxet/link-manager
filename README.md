@@ -30,6 +30,7 @@ Say goodbye to "I'll read this later" disappearing into the void.
 *   **Safety First**: Confirmation prompts preventing accidental deletions.
 
 ### 💾 **Data Sovereignty**
+*   **Multi-Database Support**: Choose between **Supabase (PostgreSQL)** or **Turso (SQLite)** using the `DB_PROVIDER` setting.
 *   **One-Click Backup**: Export your entire vault to a standardized `.json` file.
 *   **Smart Restore**: Import backups with automatic deduplication and counter synchronization.
 
@@ -40,18 +41,21 @@ Say goodbye to "I'll read this later" disappearing into the void.
 Built with modern, performance-obsessed technologies:
 
 *   **Framework**: [Next.js 15+](https://nextjs.org/) (App Router, Server Actions)
-*   **Styling**: [Tailwind CSS](https://tailwindcss.com/) (Dark Mode Default)
-*   **Database**: [Supabase](https://supabase.com/) (PostgreSQL)
+*   **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) (Dark Mode Default)
+*   **Databases**: 
+    *   [Supabase](https://supabase.com/) (PostgreSQL)
+    *   [Turso](https://turso.tech/) (SQLite/LibSQL)
 *   **Icons**: [Lucide React](https://lucide.dev/)
 *   **Scraping**: [Cheerio](https://cheerio.js.org/)
+*   **Testing**: [Node.js Test Runner](https://nodejs.org/api/test.html)
 
 ---
 
 ## 🏁 Getting Started
 
 ### Prerequisites
-*   Node.js 18+
-*   A [Supabase](https://supabase.com/) account (Free tier is perfect)
+*   Node.js 20+ (Required for experimental strip types in tests)
+*   A [Supabase](https://supabase.com/) or [Turso](https://turso.tech/) account.
 
 ### 1. Clone the Repository
 ```bash
@@ -70,12 +74,20 @@ Create a `.env.local` file in the root directory:
 cp .env.local.example .env.local
 ```
 
-Fill in your secrets:
+Fill in your secrets based on your chosen provider:
+
 ```env
-# Supabase Configuration
+# Database Provider Choice ('supabase' or 'turso')
+DB_PROVIDER=turso
+
+# If using Supabase:
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# If using Turso:
+TURSO_DATABASE_URL=your_turso_database_url
+TURSO_AUTH_TOKEN=your_turso_auth_token
 
 # Admin Access (You choose these!)
 ADMIN_USERNAME=admin
@@ -83,13 +95,29 @@ ADMIN_PASSWORD=super_secret_password
 ```
 
 ### 4. Setup Database
-Go to your Supabase SQL Editor and run the commands found in `schema.sql`. This will create the `links` table and necessary indexes.
+Depending on your provider, run the SQL initialization:
+- **Supabase**: Run the commands in `schema.sql` in the Supabase SQL Editor.
+- **Turso**: Run the commands in `turso-schema.sql` using the Turso CLI or Dashboard.
 
 ### 5. Ignite!
 ```bash
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) and log in with your credentials.
+
+---
+
+## 🧪 Testing
+
+The project includes a suite of automated tests using the native Node.js test runner.
+
+```bash
+# Run all tests
+npm test
+
+# Run a specific test file
+node --test ./lib/auth.test.ts
+```
 
 ---
 

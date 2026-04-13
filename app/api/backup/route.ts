@@ -1,24 +1,17 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getDb } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    const { data, error } = await supabase
-      .from('links')
-      .select('*')
-      .order('created_at', { ascending: true })
-
-    if (error) {
-      console.error('Backup export error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    const db = await getDb()
+    const data = await db.getAllLinksForBackup()
 
     return NextResponse.json(data)
-  } catch (error) {
-    console.error('Internal error:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  } catch (err: unknown) {
+    console.error('Internal error:', err)
+    return NextResponse.json({ error: (err as Error).message || 'Internal Server Error' }, { status: 500 })
   }
 }
 
@@ -30,35 +23,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid format. Expected an array of links.' }, { status: 400 })
     }
 
-    // Process and prepare data for bulk insert
-    const linksToInsert = body.map((link: {
-      title: string;
-      page_title?: string;
-      url: string;
-      category?: string;
-      created_at?: string;
-    }) => ({
-      title: link.title,
-      page_title: link.page_title,
-      url: link.url,
-      category: link.category,
-      // If created_at is present, keep it to maintain history
-      created_at: link.created_at || new Date().toISOString(),
-    }))
+    const db = await getDb()
+    const result = await db.bulkInsertLinks(body)
 
-    // Use upsert with ignoreDuplicates: true to skip existing URLs
-    const { error } = await supabase
-      .from('links')
-      .upsert(linksToInsert, { onConflict: 'url', ignoreDuplicates: true })
-
-    if (error) {
-      console.error('Backup import error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json({ success: true, count: linksToInsert.length })
-  } catch (error) {
-    console.error('Internal error:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    return NextResponse.json(result)
+  } catch (err: unknown) {
+    console.error('Internal error:', err)
+    return NextResponse.json({ error: (err as Error).message || 'Internal Server Error' }, { status: 500 })
   }
 }

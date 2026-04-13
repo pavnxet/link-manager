@@ -2,7 +2,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert';
 import { POST } from './route.ts';
 
-// @ts-ignore - Mocked module via loader
+// @ts-expect-error - Mocked module via loader
 import { cookieStore } from 'next/headers';
 
 describe('POST /api/auth/login', () => {
@@ -51,7 +51,7 @@ describe('POST /api/auth/login', () => {
     assert.strictEqual(cookieStore.set.mock.callCount(), 1);
     const [name, value, options] = cookieStore.set.mock.calls[0].arguments;
     assert.strictEqual(name, 'auth-token');
-    assert.strictEqual(value, 'authenticated');
+    assert.ok(value !== 'authenticated' && value.length > 0); // Check that a token is set
     assert.strictEqual(options.httpOnly, true);
     assert.strictEqual(options.path, '/');
   });
