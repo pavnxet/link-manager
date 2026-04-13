@@ -1,20 +1,28 @@
 name: Mirror to Codeberg
 
-on: [push, delete]
+on:
+  push:
+    branches: [ "gemini-flash-link-manager-v2.0" ]  # adjust to your branch
 
 jobs:
-  mirror_to_codeberg:
+  mirror:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Fetch all history and branches
 
       - name: Mirror to Codeberg
-        uses: pixta-dev/repository-mirroring-action@v1
-        with:
-          target_repo_url:
-            git@codeberg.org:pavnxet/link-manager.git
-          ssh_private_key:
-            ${{ secrets.CODEBERG_SSH_KEY }}
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.CODEBERG_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -t rsa codeberg.org >> ~/.ssh/known_hosts
+
+          git remote add mirror git@codeberg.org:pavnxet/link-manager.git
+
+          # Push all remote-tracking branches (from origin) to Codeberg as real branches
+          git push --force --prune mirror "refs/remotes/origin/*:refs/heads/*" "refs/tags/*:refs/tags/*"
