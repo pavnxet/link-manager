@@ -1,0 +1,14 @@
+name = "links-telegram-bot"
+main = "worker/index.ts"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Local dev settings (override with `wrangler dev` flags)
+[dev]
+port = 5000
+ip = "0.0.0.0"
+
+# Vars are non-sensitive defaults; secrets go through `wrangler secret put` (or .dev.vars locally)
+[vars]
+SESSION_TTL_DAYS = "7"
+PAGE_SIZE = "10"
