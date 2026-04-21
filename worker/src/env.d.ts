@@ -2,7 +2,7 @@ export interface Env {
   ADMIN_USERNAME: string;
   ADMIN_PASSWORD: string;
   SUPABASE_URL: string;
-  SUPABASE_ANON_KEY: string; // Using anon key instead of service role for security
+  SUPABASE_SERVICE_ROLE_KEY: string; // Use service_role key (sb_secret_...) for server-side
   TELEGRAM_BOT_TOKEN: string;
 }
 

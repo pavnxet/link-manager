@@ -5,7 +5,9 @@ let supabaseInstance: SupabaseClient | null = null;
 
 export function getSupabase(env: Env): SupabaseClient {
   if (!supabaseInstance) {
-    supabaseInstance = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+    // Using SUPABASE_SERVICE_ROLE_KEY (sb_secret_...) for server-side operations
+    // This key is safe to use in Cloudflare Workers as it never exposes to clients
+    supabaseInstance = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
         autoRefreshToken: false,
         persistSession: false

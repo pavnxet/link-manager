@@ -145,7 +145,7 @@ link-vault-bot/
    npx wrangler secret put ADMIN_USERNAME
    npx wrangler secret put ADMIN_PASSWORD
    npx wrangler secret put SUPABASE_URL
-   npx wrangler secret put SUPABASE_ANON_KEY
+   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
    npx wrangler secret put TELEGRAM_BOT_TOKEN
    ```
 
@@ -174,8 +174,10 @@ All secrets are stored securely in Cloudflare Workers KV.
 | `ADMIN_USERNAME` | ✅ | Admin username for authentication | `admin` |
 | `ADMIN_PASSWORD` | ✅ | Admin password for authentication | `securepass123` |
 | `SUPABASE_URL` | ✅ | Your Supabase project URL | `https://xyz.supabase.co` |
-| `SUPABASE_ANON_KEY` | ✅ | Supabase Anon/Public Key (NOT Service Role) | `eyJhbG...` |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase Service Role Key (starts with `sb_secret_...`) | `sb_secret_GAOXw...` |
 | `TELEGRAM_BOT_TOKEN` | ✅ | Bot token from BotFather | `123456:ABC-DEF...` |
+
+> **Important**: Use the **Service Role Key** (secret key starting with `sb_secret_...`), NOT the anon/public key. This is safe because the key runs server-side in Cloudflare Workers and is never exposed to clients.
 
 Create a `.env` file locally for testing (not committed to git):
 
@@ -183,7 +185,7 @@ Create a `.env` file locally for testing (not committed to git):
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=securepass123
 SUPABASE_URL=https://xyz.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_GAOXw...
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
 ```
 
@@ -349,7 +351,7 @@ You need Node.js installed to bundle the code.
 1.  Go to the **Settings** tab of your worker.
 2.  Under **Compatibility flags**, add: `nodejs_compat` (Required for Supabase client).
 3.  Under **Environment Variables** (or "Variables and Secrets"):
-    *   Add your secrets one by one (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `TELEGRAM_BOT_TOKEN`).
+    *   Add your secrets one by one (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `TELEGRAM_BOT_TOKEN`).
     *   **Important:** Mark them as **Secrets** (encrypted) rather than plain variables.
 4.  Click **Save**.
 
@@ -434,7 +436,7 @@ This project implements several security best practices:
 - Check Cloudflare Logs for errors
 
 **3. Database Connection Failed**
-- Verify `SUPABASE_URL` and `SUPABASE_ANON_KEY` are correct
+- Verify `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are correct
 - Ensure RLS policies are created in Supabase
 - Check Supabase dashboard for connection logs
 
