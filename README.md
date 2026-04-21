@@ -1,21 +1,18 @@
-# Link Manager (Telegram Bot + Cloudflare Worker + Supabase)
+# Link Manager (Telegram + Cloudflare Worker + Supabase)
 
-This project now runs as a Telegram-first link manager.
+Telegram-first link manager powered by Cloudflare Worker and Supabase.
 
-## Architecture
+## Kept files/scope
 
-- **Data store:** Supabase (PostgreSQL)
-- **Backend bridge:** Cloudflare Worker
-- **Client UI:** Telegram bot commands (admin-authenticated)
-- **Web app:** retired dashboard; root app only exposes a health/status surface
+This repository now keeps only Telegram-worker related implementation:
+- `worker/` (webhook backend, command router, tests, wrangler config)
+- `schema.sql` (Supabase schema + RPC)
+- root docs/config (`README.md`, `.env.local.example`, `package.json`, `.gitignore`)
 
-## Required environment/secrets
+## Required secrets
 
-### Supabase
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
-
-### Telegram/Worker
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_WEBHOOK_SECRET`
 - `ADMIN_USERNAME`
@@ -23,22 +20,18 @@ This project now runs as a Telegram-first link manager.
 - `SESSION_TTL_SECONDS` (optional, default `86400`)
 - `RATE_LIMIT_PER_MINUTE` (optional, default `30`)
 
-## Database setup
+## Setup
 
-Run `./schema.sql` in Supabase SQL editor.
-
-## Worker setup
-
-1. Install worker dependencies:
+1. Run `schema.sql` in Supabase SQL editor.
+2. Create KV namespaces and set IDs in `worker/wrangler.toml` (`SESSIONS`, `RATE_LIMIT`).
+3. Install dependencies:
+   ```bash
+   npm install
+   cd worker && npm install
+   ```
+4. Set Worker secrets:
    ```bash
    cd worker
-   npm install
-   ```
-2. Create KV namespaces and set IDs in `/home/runner/work/link-manager/link-manager/worker/wrangler.toml`:
-   - `SESSIONS`
-   - `RATE_LIMIT`
-3. Set secrets:
-   ```bash
    npx wrangler secret put TELEGRAM_BOT_TOKEN
    npx wrangler secret put TELEGRAM_WEBHOOK_SECRET
    npx wrangler secret put ADMIN_USERNAME
@@ -46,19 +39,19 @@ Run `./schema.sql` in Supabase SQL editor.
    npx wrangler secret put SUPABASE_URL
    npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
    ```
-4. Deploy:
+5. Deploy Worker:
    ```bash
    npm run build
    npx wrangler deploy
    ```
-5. Register Telegram webhook (replace URL):
+6. Register webhook:
    ```bash
    curl -X POST "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
      -H "Content-Type: application/json" \
      -d '{"url":"https://<your-worker-domain>/webhook","secret_token":"<TELEGRAM_WEBHOOK_SECRET>"}'
    ```
 
-## Bot commands
+## Commands
 
 - `/login <username> <password>`
 - `/nextid`
@@ -68,32 +61,16 @@ Run `./schema.sql` in Supabase SQL editor.
 - `/edit <id> title=<...> page_title=<...> category=<...> url=<...>`
 - `/delete <id>` then `/confirm <token>`
 - `/backup`
-- `/restore` (then upload backup JSON file)
+- `/restore` (upload JSON backup)
 - `/scrape <url>`
 - `/help`
 
-## Security controls included
-
-- Webhook secret verification (`x-telegram-bot-api-secret-token`)
-- Admin username/password login
-- Session TTL in KV
-- Authorized admin chat lock
-- Basic per-chat rate limit
-- Confirmation token for destructive delete
-
-## Validation commands
+## Validation
 
 From repository root:
 
 ```bash
 npm run lint
 npm test
-npm run build
-```
-
-From worker directory:
-
-```bash
-npm run test
 npm run build
 ```

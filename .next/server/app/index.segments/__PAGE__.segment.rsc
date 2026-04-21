@@ -1,0 +1,5 @@
+1:"$Sreact.fragment"
+2:I[97367,["/_next/static/chunks/2f236954d6a65e12.js"],"OutletBoundary"]
+3:"$Sreact.suspense"
+0:{"buildId":"i1sx8BUvFpdLp4OlY3_a_","rsc":["$","$1","c",{"children":[["$","main",null,{"style":{"minHeight":"100vh","display":"grid","placeItems":"center","background":"#0b0f19","color":"#e5e7eb","fontFamily":"system-ui, sans-serif","padding":24},"children":["$","div",null,{"style":{"maxWidth":720,"width":"100%","border":"1px solid #1f2937","borderRadius":12,"padding":24,"background":"#111827"},"children":[["$","h1",null,{"style":{"margin":0,"fontSize":28},"children":"Link Manager Bot Backend"}],["$","p",null,{"style":{"marginTop":12,"color":"#9ca3af"},"children":"The web dashboard is retired. Use the Telegram bot connected through the Cloudflare Worker bridge."}],["$","p",null,{"style":{"marginTop":8,"color":"#9ca3af"},"children":["Health endpoint: ",["$","code",null,{"children":"/api/health"}]]}]]}]}],null,["$","$L2",null,{"children":["$","$3",null,{"name":"Next.MetadataOutlet","children":"$@4"}]}]]}],"loading":null,"isPartial":false}
+4:null

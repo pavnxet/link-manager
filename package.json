@@ -1,35 +1,11 @@
 {
-  "name": "web",
+  "name": "link-manager",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:worker": "npm --prefix worker run dev",
-    "build": "next build && npm --prefix worker run build",
-    "build:web": "next build",
-    "build:worker": "npm --prefix worker run build",
-    "start": "next start",
-    "lint": "eslint",
-    "test": "node --experimental-strip-types --import ./test/register-hooks.mjs --test app/**/*.test.ts && npm --prefix worker run test"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.97.0",
-    "cheerio": "^1.2.0",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.575.0",
-    "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "tailwind-merge": "^3.5.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.6",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "dev": "npm --prefix worker run dev",
+    "lint": "echo 'Telegram worker-only project: no root lint target'",
+    "test": "npm --prefix worker run test",
+    "build": "npm --prefix worker run build"
   }
 }
