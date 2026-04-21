@@ -3,7 +3,7 @@
 
 -- ---------- links ----------
 CREATE TABLE IF NOT EXISTS links (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   owner_telegram_id BIGINT NOT NULL,
   title TEXT NOT NULL,
   page_title TEXT,
