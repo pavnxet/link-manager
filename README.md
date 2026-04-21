@@ -25,13 +25,13 @@ This project now runs as a Telegram-first link manager.
 
 ## Database setup
 
-Run `/home/runner/work/link-manager/link-manager/schema.sql` in Supabase SQL editor.
+Run `./schema.sql` in Supabase SQL editor.
 
 ## Worker setup
 
 1. Install worker dependencies:
    ```bash
-   cd /home/runner/work/link-manager/link-manager/worker
+   cd worker
    npm install
    ```
 2. Create KV namespaces and set IDs in `/home/runner/work/link-manager/link-manager/worker/wrangler.toml`:

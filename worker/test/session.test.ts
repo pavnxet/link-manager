@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { createSession, isSessionValid, refreshSession } from '../src/session'
+import { createSession, isSessionValid, refreshSession } from '../src/session.ts'
 
 describe('session helpers', () => {
   it('creates valid sessions', () => {

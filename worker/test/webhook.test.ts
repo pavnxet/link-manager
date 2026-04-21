@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import worker from '../src/index'
+import worker from '../src/index.ts'
 
 function createKVStub() {
   const map = new Map<string, string>()

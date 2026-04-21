@@ -1,6 +1,7 @@
 {
   "name": "link-manager-worker",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "build": "wrangler deploy --dry-run",

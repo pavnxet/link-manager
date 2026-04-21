@@ -5,23 +5,35 @@ export type ScrapeResult = {
 
 function decodeHtmlEntities(input: string): string {
   return input
-    .replaceAll('&amp;', '&')
     .replaceAll('&lt;', '<')
     .replaceAll('&gt;', '>')
     .replaceAll('&quot;', '"')
     .replaceAll('&#39;', "'")
+    .replaceAll('&amp;', '&')
+}
+
+function getHostname(rawUrl: string): string {
+  try {
+    return new URL(rawUrl).hostname.toLowerCase()
+  } catch {
+    return ''
+  }
+}
+
+function hostMatches(hostname: string, ...domains: string[]): boolean {
+  return domains.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`))
 }
 
 export function categorize(url: string, title: string): string {
-  const lowerUrl = url.toLowerCase()
+  const hostname = getHostname(url)
   const lowerTitle = title.toLowerCase()
 
-  if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) return '📺 #Video'
-  if (lowerUrl.includes('github.com') || lowerUrl.includes('gitlab.com')) return '💻 #Code'
-  if (lowerUrl.includes('medium.com') || lowerUrl.includes('dev.to') || lowerUrl.includes('substack.com')) return '📖 #Article'
-  if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com') || lowerUrl.includes('linkedin.com') || lowerUrl.includes('facebook.com') || lowerUrl.includes('instagram.com')) return '🐦 #Social'
-  if (lowerUrl.includes('reddit.com')) return '💬 #Discussion'
-  if (lowerUrl.includes('stackoverflow.com')) return '❓ #Question'
+  if (hostMatches(hostname, 'youtube.com', 'youtu.be')) return '📺 #Video'
+  if (hostMatches(hostname, 'github.com', 'gitlab.com')) return '💻 #Code'
+  if (hostMatches(hostname, 'medium.com', 'dev.to', 'substack.com')) return '📖 #Article'
+  if (hostMatches(hostname, 'twitter.com', 'x.com', 'linkedin.com', 'facebook.com', 'instagram.com')) return '🐦 #Social'
+  if (hostMatches(hostname, 'reddit.com')) return '💬 #Discussion'
+  if (hostMatches(hostname, 'stackoverflow.com')) return '❓ #Question'
 
   if (lowerTitle.includes('video')) return '📺 #Video'
   if (lowerTitle.includes('news')) return '📰 #News'

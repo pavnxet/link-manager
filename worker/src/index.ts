@@ -1,7 +1,7 @@
-import { parseCommand, parseKeyValueArgs } from './commands'
-import { scrape } from './scrape'
-import { SupabaseRepository } from './supabase'
-import { createSession, isSessionValid, refreshSession, type Session } from './session'
+import { parseCommand, parseKeyValueArgs } from './commands.ts'
+import { scrape } from './scrape.ts'
+import { SupabaseRepository } from './supabase.ts'
+import { createSession, isSessionValid, refreshSession, type Session } from './session.ts'
 
 type Env = {
   TELEGRAM_BOT_TOKEN: string
@@ -319,7 +319,7 @@ async function handleCommand(env: Env, update: TelegramUpdate): Promise<void> {
   }
 }
 
-export default {
+const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
 
@@ -350,4 +350,5 @@ export default {
   },
 }
 
+export default worker
 export { handleCommand }

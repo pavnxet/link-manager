@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { parseCommand, parseKeyValueArgs } from '../src/commands'
+import { parseCommand, parseKeyValueArgs } from '../src/commands.ts'
 
 describe('parseCommand', () => {
   it('parses a basic command', () => {
@@ -17,8 +17,8 @@ describe('parseCommand', () => {
 
 describe('parseKeyValueArgs', () => {
   it('parses key value arguments', () => {
-    const parsed = parseKeyValueArgs(['title=42', 'category=�� #Code'])
+    const parsed = parseKeyValueArgs(['title=42', 'category=#Code'])
     assert.strictEqual(parsed.title, '42')
-    assert.strictEqual(parsed.category, '💻 #Code')
+    assert.strictEqual(parsed.category, '#Code')
   })
 })
