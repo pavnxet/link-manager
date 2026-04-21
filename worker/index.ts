@@ -24,8 +24,29 @@ export default {
     // Health
     if (url.pathname === "/" || url.pathname === "/health") {
       const missing = missingSecrets(env);
-      const body = missing.length === 0 ? "ok" : `ok (missing secrets: ${missing.join(", ")})`;
+      const body = missing.length === 0 ? "ok v3" : `ok v3 (missing secrets: ${missing.join(", ")})`;
       return new Response(body, { status: 200 });
+    }
+
+    // Diagnostic: confirms which version is live + reports secret lengths (not values).
+    if (url.pathname === "/diag" && req.method === "GET") {
+      const provided = url.searchParams.get("secret") ?? "";
+      if (!timingSafeEqual(provided, env.TELEGRAM_WEBHOOK_SECRET)) {
+        return new Response("forbidden\n", { status: 403 });
+      }
+      const lens: Record<string, number | string> = {};
+      const keys: (keyof Env)[] = [
+        "TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET",
+        "SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SECRET_KEY",
+        "ADMIN_USERNAME", "ADMIN_PASSWORD_HASH", "BOT_USERNAME",
+      ];
+      for (const k of keys) {
+        const v = env[k];
+        lens[k] = v == null ? "(missing)" : `len=${String(v).length} trimmed=${String(v).trim().length}`;
+      }
+      return new Response(JSON.stringify({ version: "v3", env: lens }, null, 2), {
+        headers: { "content-type": "application/json" },
+      });
     }
 
     // Webhook receiver — path includes secret
