@@ -1,0 +1,16 @@
+{
+  "name": "link-manager-worker",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler deploy --dry-run",
+    "test": "node --experimental-strip-types --test ./test/**/*.test.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.97.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260410.0",
+    "wrangler": "^4.13.2"
+  }
+}

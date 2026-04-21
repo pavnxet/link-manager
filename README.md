@@ -1,151 +1,99 @@
-# 🏗️ Link Vault Web
+# Link Manager (Telegram Bot + Cloudflare Worker + Supabase)
 
-> A **private, cloud-native personal knowledge hub** for your clipboard.
-> Effortlessly save, organize, and retrieve your digital footprint.
+This project now runs as a Telegram-first link manager.
 
-![Link Vault Dashboard](https://images.unsplash.com/photo-1555421689-d68471e189f2?auto=format&fit=crop&q=80&w=1000)
+## Architecture
 
-## 🌟 Project Vision
+- **Data store:** Supabase (PostgreSQL)
+- **Backend bridge:** Cloudflare Worker
+- **Client UI:** Telegram bot commands (admin-authenticated)
+- **Web app:** retired dashboard; root app only exposes a health/status surface
 
-**Link Vault Web** transforms the chaotic process of saving links into a streamlined, zen-like experience. Designed as a "Single-User Personal Knowledge Hub," it replaces local clipboard tools and chat-based saving methods with a robust, persistent cloud database.
+## Required environment/secrets
 
-Say goodbye to "I'll read this later" disappearing into the void.
+### Supabase
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
----
+### Telegram/Worker
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_WEBHOOK_SECRET`
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
+- `SESSION_TTL_SECONDS` (optional, default `86400`)
+- `RATE_LIMIT_PER_MINUTE` (optional, default `30`)
 
-## 🚀 Key Features
+## Database setup
 
-### 🔒 **Fortress-Level Privacy**
-*   **Zero Public Access**: No sign-up page. Access is strictly controlled via server-side environment secrets (`ADMIN_USERNAME` & `ADMIN_PASSWORD`).
-*   **Middleware Protection**: Every route is guarded. Unauthorized visitors get a 404 or a login screen.
+Run `/home/runner/work/link-manager/link-manager/schema.sql` in Supabase SQL editor.
 
-### ⚡ **Rapid "Paste & Go" Entry**
-*   **Smart Auto-Counter**: Automatically suggests the next ID (e.g., `#42` -> `#43`) based on your entire database history.
-*   **Auto-Scraping**: Paste a URL, and the system instantly fetches the page title.
-*   **Intelligent Categorization**: Detects the domain (YouTube, GitHub, etc.) and keywords to auto-assign emojis and hashtags (e.g., 📺 #Video, 💻 #Code).
+## Worker setup
 
-### 🎛️ **Powerful Management**
-*   **Live Search**: Instantly filter your library by title, URL, or category.
-*   **Inline Editing**: Fix typos or update categories without leaving the dashboard.
-*   **Safety First**: Confirmation prompts preventing accidental deletions.
+1. Install worker dependencies:
+   ```bash
+   cd /home/runner/work/link-manager/link-manager/worker
+   npm install
+   ```
+2. Create KV namespaces and set IDs in `/home/runner/work/link-manager/link-manager/worker/wrangler.toml`:
+   - `SESSIONS`
+   - `RATE_LIMIT`
+3. Set secrets:
+   ```bash
+   npx wrangler secret put TELEGRAM_BOT_TOKEN
+   npx wrangler secret put TELEGRAM_WEBHOOK_SECRET
+   npx wrangler secret put ADMIN_USERNAME
+   npx wrangler secret put ADMIN_PASSWORD
+   npx wrangler secret put SUPABASE_URL
+   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+   ```
+4. Deploy:
+   ```bash
+   npm run build
+   npx wrangler deploy
+   ```
+5. Register Telegram webhook (replace URL):
+   ```bash
+   curl -X POST "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
+     -H "Content-Type: application/json" \
+     -d '{"url":"https://<your-worker-domain>/webhook","secret_token":"<TELEGRAM_WEBHOOK_SECRET>"}'
+   ```
 
-### 💾 **Data Sovereignty**
-*   **Multi-Database Support**: Choose between **Supabase (PostgreSQL)** or **Turso (SQLite)** using the `DB_PROVIDER` setting.
-*   **One-Click Backup**: Export your entire vault to a standardized `.json` file.
-*   **Smart Restore**: Import backups with automatic deduplication and counter synchronization.
+## Bot commands
 
----
+- `/login <username> <password>`
+- `/nextid`
+- `/add <url> [title] [category=#Tag]`
+- `/list [query]`
+- `/search <query>`
+- `/edit <id> title=<...> page_title=<...> category=<...> url=<...>`
+- `/delete <id>` then `/confirm <token>`
+- `/backup`
+- `/restore` (then upload backup JSON file)
+- `/scrape <url>`
+- `/help`
 
-## 🛠️ Tech Stack
+## Security controls included
 
-Built with modern, performance-obsessed technologies:
+- Webhook secret verification (`x-telegram-bot-api-secret-token`)
+- Admin username/password login
+- Session TTL in KV
+- Authorized admin chat lock
+- Basic per-chat rate limit
+- Confirmation token for destructive delete
 
-*   **Framework**: [Next.js 15+](https://nextjs.org/) (App Router, Server Actions)
-*   **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) (Dark Mode Default)
-*   **Databases**: 
-    *   [Supabase](https://supabase.com/) (PostgreSQL)
-    *   [Turso](https://turso.tech/) (SQLite/LibSQL)
-*   **Icons**: [Lucide React](https://lucide.dev/)
-*   **Scraping**: [Cheerio](https://cheerio.js.org/)
-*   **Testing**: [Node.js Test Runner](https://nodejs.org/api/test.html)
+## Validation commands
 
----
-
-## 🏁 Getting Started
-
-### Prerequisites
-*   Node.js 20+ (Required for experimental strip types in tests)
-*   A [Supabase](https://supabase.com/) or [Turso](https://turso.tech/) account.
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/yourusername/link-vault-web.git
-cd link-vault-web
-```
-
-### 2. Install Dependencies
-```bash
-npm install
-```
-
-### 3. Configure Environment
-Create a `.env.local` file in the root directory:
-```bash
-cp .env.local.example .env.local
-```
-
-Fill in your secrets based on your chosen provider:
-
-```env
-# Database Provider Choice ('supabase' or 'turso')
-DB_PROVIDER=turso
-
-# If using Supabase:
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-
-# If using Turso:
-TURSO_DATABASE_URL=your_turso_database_url
-TURSO_AUTH_TOKEN=your_turso_auth_token
-
-# Admin Access (You choose these!)
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=super_secret_password
-```
-
-### 4. Setup Database
-Depending on your provider, run the SQL initialization:
-- **Supabase**: Run the commands in `schema.sql` in the Supabase SQL Editor.
-- **Turso**: Run the commands in `turso-schema.sql` using the Turso CLI or Dashboard.
-
-### 5. Ignite!
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) and log in with your credentials.
-
----
-
-## 🧪 Testing
-
-The project includes a suite of automated tests using the native Node.js test runner.
+From repository root:
 
 ```bash
-# Run all tests
+npm run lint
 npm test
-
-# Run a specific test file
-node --test ./lib/auth.test.ts
+npm run build
 ```
 
----
+From worker directory:
 
-## 📖 User Guide
-
-### Adding a Link
-1.  **Paste**: Drop a URL into the input field.
-2.  **Wait**: Watch the **Page Title** and **Category** auto-fill in seconds.
-3.  **Save**: Hit Enter or click the `+` button. The **Title** ID increments automatically!
-
-### Restoring a Backup
-1.  Click the **Restore** (Upload) button in the header.
-2.  Select your `.json` backup file.
-3.  Confirm the merge. The system will skip duplicates and sync the "Next ID" counter to the new highest number.
-
----
-
-## ☁️ Deployment
-
-The easiest way to deploy is **Vercel**.
-
-1.  Push your code to a Git repository.
-2.  Import the project into Vercel.
-3.  Add your Environment Variables in the Vercel Dashboard.
-4.  **Deploy!**
-
----
-
-## 📜 License
-
-MIT License. Built for personal productivity.
+```bash
+npm run test
+npm run build
+```

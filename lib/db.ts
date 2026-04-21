@@ -40,23 +40,8 @@ export async function getDb(): Promise<DbClient> {
     return dbClientInstance;
   }
 
-  // Default to 'turso' as requested for the move away from Supabase
-  const provider = process.env.DB_PROVIDER || 'turso';
-
-  try {
-    if (provider === 'turso') {
-      const { TursoDbClient } = await import('./db/turso');
-      dbClientInstance = new TursoDbClient();
-    } else if (provider === 'supabase') {
-      const { SupabaseDbClient } = await import('./db/supabase');
-      dbClientInstance = new SupabaseDbClient();
-    } else {
-      throw new Error(`Unsupported database provider: ${provider}`);
-    }
-  } catch (error) {
-    console.error(`Failed to initialize database provider "${provider}":`, error);
-    throw error;
-  }
+  const { SupabaseDbClient } = await import('./db/supabase');
+  dbClientInstance = new SupabaseDbClient();
 
   return dbClientInstance;
 }
