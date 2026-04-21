@@ -17,6 +17,7 @@ const child = spawn(command, args, {
   env: process.env,
 })
 
+// Standard Unix convention: 128 + signal number.
 const signalExitCodes = {
   SIGINT: 130,
   SIGTERM: 143,
