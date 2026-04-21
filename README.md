@@ -313,7 +313,55 @@ npm run test:integration
 
 ## Deployment
 
-### Production Deployment
+### Option 1: Deploy via Cloudflare Dashboard (Web UI)
+
+Since the Cloudflare Dashboard editor only supports single-file JavaScript and cannot handle TypeScript or `npm` dependencies directly, you must **build the project locally first** and then upload the bundled file.
+
+#### Step 1: Build the Project Locally
+You need Node.js installed to bundle the code.
+
+1.  Open your terminal in the `worker` folder:
+    ```bash
+    cd worker
+    npm install
+    ```
+2.  Run the build command to generate a single JavaScript file:
+    ```bash
+    npx wrangler deploy --dry-run --outdir=dist
+    ```
+    *This creates a `worker/dist/` folder containing a single `index.js` file with all your code and dependencies bundled together.*
+
+#### Step 2: Create Worker in Dashboard
+1.  Go to the [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Workers & Pages**.
+2.  Click **Create Application** → **Create Worker**.
+3.  Name it (e.g., `link-vault-bot`) and click **Deploy**.
+4.  Click on the new worker name to open its details page.
+
+#### Step 3: Upload the Bundle
+1.  Click the **Edit Code** button.
+2.  In the file explorer on the left, delete the default `src/index.js`.
+3.  **Upload** the generated `worker/dist/index.js` file from your computer.
+    *   *Drag and drop the file into the sidebar or use the "Upload" button if available.*
+4.  Ensure the file is named `index.js`.
+5.  Click **Save and Deploy**.
+
+#### Step 4: Configure Settings
+1.  Go to the **Settings** tab of your worker.
+2.  Under **Compatibility flags**, add: `nodejs_compat` (Required for Supabase client).
+3.  Under **Environment Variables** (or "Variables and Secrets"):
+    *   Add your secrets one by one (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `TELEGRAM_BOT_TOKEN`).
+    *   **Important:** Mark them as **Secrets** (encrypted) rather than plain variables.
+4.  Click **Save**.
+
+#### Step 5: Set Webhook
+Copy your worker URL (e.g., `https://link-vault-bot.username.workers.dev`) and run this command locally to connect Telegram:
+```bash
+curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=https://<YOUR-WORKER-URL>.workers.dev/webhook"
+```
+
+---
+
+### Option 2: Deploy via Wrangler CLI (Recommended)
 
 ```bash
 npx wrangler deploy --prod
