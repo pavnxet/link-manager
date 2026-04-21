@@ -5,6 +5,10 @@
 # worker
 /worker/.wrangler
 
+# build artifacts
+/.next/
+/coverage
+
 # env files
 .env*
 !.env.local.example
