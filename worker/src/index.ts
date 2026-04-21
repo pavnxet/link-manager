@@ -15,6 +15,16 @@ import {
 
 const app = new Hono<{ Bindings: Env }>();
 
+// Root endpoint for quick deploy verification
+app.get('/', (c) => {
+  return c.json({
+    name: 'link-vault-telegram-bot',
+    status: 'ok',
+    endpoints: ['/webhook', '/health'],
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Webhook endpoint
 app.post('/webhook', async (c) => {
   const env = c.env;

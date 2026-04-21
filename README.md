@@ -94,7 +94,9 @@
 
 ```text
 link-vault-bot/
+├── index.js                 # Root JS entry proxy for direct deploy integrations
 ├── worker/                 # Cloudflare Workers application
+│   ├── index.js            # JS worker entrypoint (re-exports src/index.ts)
 │   ├── src/
 │   │   ├── index.ts        # Main entry point & webhook handler
 │   │   ├── supabase.ts     # Database client & operations
@@ -329,7 +331,7 @@ You need Node.js installed to bundle the code.
     ```
 2.  Run the build command to generate a single JavaScript file:
     ```bash
-    npx wrangler deploy --dry-run --outdir=dist
+    npm run build:dashboard
     ```
     *This creates a `worker/dist/` folder containing a single `index.js` file with all your code and dependencies bundled together.*
 
@@ -366,7 +368,7 @@ curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=https:
 ### Option 2: Deploy via Wrangler CLI (Recommended)
 
 ```bash
-npx wrangler deploy --prod
+npm run deploy:direct
 ```
 
 ### CI/CD Integration
@@ -401,6 +403,10 @@ The `worker/dist/index.js` file is provided specifically for Cloudflare Workers 
 - ✅ Plain JavaScript (TypeScript compiled)
 - ✅ HTML parser inlined
 - ✅ Ready to copy-paste into the web editor
+
+The repository now also includes:
+- `worker/index.js` (worker entry for Wrangler `main`)
+- `index.js` at repository root (proxy entry for direct platform integrations)
 
 ## Security
 
