@@ -1,151 +1,86 @@
-# 🏗️ Link Vault Web
+# Links Telegram Bot
 
-> A **private, cloud-native personal knowledge hub** for your clipboard.
-> Effortlessly save, organize, and retrieve your digital footprint.
+A Telegram bot to save, search, and share links. Backed by **Supabase** (Postgres) and served by a **Cloudflare Worker**.
 
-![Link Vault Dashboard](https://images.unsplash.com/photo-1555421689-d68471e189f2?auto=format&fit=crop&q=80&w=1000)
-
-## 🌟 Project Vision
-
-**Link Vault Web** transforms the chaotic process of saving links into a streamlined, zen-like experience. Designed as a "Single-User Personal Knowledge Hub," it replaces local clipboard tools and chat-based saving methods with a robust, persistent cloud database.
-
-Say goodbye to "I'll read this later" disappearing into the void.
-
----
-
-## 🚀 Key Features
-
-### 🔒 **Fortress-Level Privacy**
-*   **Zero Public Access**: No sign-up page. Access is strictly controlled via server-side environment secrets (`ADMIN_USERNAME` & `ADMIN_PASSWORD`).
-*   **Middleware Protection**: Every route is guarded. Unauthorized visitors get a 404 or a login screen.
-
-### ⚡ **Rapid "Paste & Go" Entry**
-*   **Smart Auto-Counter**: Automatically suggests the next ID (e.g., `#42` -> `#43`) based on your entire database history.
-*   **Auto-Scraping**: Paste a URL, and the system instantly fetches the page title.
-*   **Intelligent Categorization**: Detects the domain (YouTube, GitHub, etc.) and keywords to auto-assign emojis and hashtags (e.g., 📺 #Video, 💻 #Code).
-
-### 🎛️ **Powerful Management**
-*   **Live Search**: Instantly filter your library by title, URL, or category.
-*   **Inline Editing**: Fix typos or update categories without leaving the dashboard.
-*   **Safety First**: Confirmation prompts preventing accidental deletions.
-
-### 💾 **Data Sovereignty**
-*   **Multi-Database Support**: Choose between **Supabase (PostgreSQL)** or **Turso (SQLite)** using the `DB_PROVIDER` setting.
-*   **One-Click Backup**: Export your entire vault to a standardized `.json` file.
-*   **Smart Restore**: Import backups with automatic deduplication and counter synchronization.
-
----
-
-## 🛠️ Tech Stack
-
-Built with modern, performance-obsessed technologies:
-
-*   **Framework**: [Next.js 15+](https://nextjs.org/) (App Router, Server Actions)
-*   **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) (Dark Mode Default)
-*   **Databases**: 
-    *   [Supabase](https://supabase.com/) (PostgreSQL)
-    *   [Turso](https://turso.tech/) (SQLite/LibSQL)
-*   **Icons**: [Lucide React](https://lucide.dev/)
-*   **Scraping**: [Cheerio](https://cheerio.js.org/)
-*   **Testing**: [Node.js Test Runner](https://nodejs.org/api/test.html)
-
----
-
-## 🏁 Getting Started
-
-### Prerequisites
-*   Node.js 20+ (Required for experimental strip types in tests)
-*   A [Supabase](https://supabase.com/) or [Turso](https://turso.tech/) account.
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/yourusername/link-vault-web.git
-cd link-vault-web
+## Architecture
 ```
-
-### 2. Install Dependencies
-```bash
-npm install
+Telegram ──webhook──▶ Cloudflare Worker (worker/) ──REST──▶ Supabase
 ```
+- Worker uses Supabase's new key model: `sb_publishable_…` + `sb_secret_…` (no legacy anon/service_role).
+- Single-admin auth via `/login <user> <pass>` — password stored as a sha256 hash in Worker secrets.
+- Webhook URL contains a secret + Telegram's `X-Telegram-Bot-Api-Secret-Token` header is verified.
+- RLS is enabled on every table; the Worker is the only client and uses the secret key.
 
-### 3. Configure Environment
-Create a `.env.local` file in the root directory:
-```bash
-cp .env.local.example .env.local
-```
+## Bot features
+- `/start`, `/help`
+- `/login`, `/logout`, `/whoami`
+- `/add <url> [title]` — also auto-fetches the page `<title>`
+- `/list [page]` — paginated with inline Prev/Next
+- `/search <query>`
+- `/get <id>`, `/delete <id>`, `/category <id> <name>`
+- `/stats`
+- `/export` — sends a JSON file
+- `/import` — upload a JSON file
+- Inline mode: `@yourbot query` to search and share
+- Inline keyboard with delete confirmation
+- In-memory token-bucket rate limit per user
 
-Fill in your secrets based on your chosen provider:
+## Setup
 
-```env
-# Database Provider Choice ('supabase' or 'turso')
-DB_PROVIDER=turso
+### 1. Supabase
+1. Create a project at supabase.com.
+2. SQL editor → paste `schema.sql` → Run.
+3. Project Settings → API keys → use the **new** Publishable (`sb_publishable_…`) and Secret (`sb_secret_…`) keys.
 
-# If using Supabase:
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+### 2. Telegram bot
+1. Talk to [@BotFather](https://t.me/BotFather) → `/newbot` → save the token.
+2. `/setinline` to enable inline mode.
 
-# If using Turso:
-TURSO_DATABASE_URL=your_turso_database_url
-TURSO_AUTH_TOKEN=your_turso_auth_token
+### 3. Local dev on Replit
+1. Copy `.dev.vars.example` → `.dev.vars` and fill it in.
+2. Hash your admin password:
+   ```
+   node scripts/hash-password.mjs 'your password'
+   ```
+   Put the hex into `ADMIN_PASSWORD_HASH`.
+3. Generate a webhook secret (any long random hex):
+   ```
+   openssl rand -hex 32
+   ```
+4. The workflow runs `wrangler dev` on port 5000 — Replit exposes it as `https://<your-repl>.replit.dev`.
+5. Register the webhook:
+   ```
+   WORKER_URL=https://<your-repl>.replit.dev WEBHOOK_SECRET=<same as .dev.vars> npm run set-webhook
+   ```
+6. Message the bot — `/start`, then `/login admin yourpassword`.
 
-# Admin Access (You choose these!)
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=super_secret_password
-```
+### 4. Deploy via the Cloudflare dashboard (no CLI)
 
-### 4. Setup Database
-Depending on your provider, run the SQL initialization:
-- **Supabase**: Run the commands in `schema.sql` in the Supabase SQL Editor.
-- **Turso**: Run the commands in `turso-schema.sql` using the Turso CLI or Dashboard.
+1. **Push this repo to GitHub** (already done if you're reading this on GitHub).
+2. Go to **[dash.cloudflare.com](https://dash.cloudflare.com)** → **Workers & Pages** → **Create** → **Workers** tab → **Import a repository**.
+3. Authorize Cloudflare to access your GitHub account, then pick `pavnxet/link-manager` (or your fork) and the branch you want to deploy.
+4. On the build configuration screen:
+   - **Build command**: leave empty (Wrangler reads `wrangler.toml` directly).
+   - **Deploy command**: `npx wrangler deploy` (this is the default).
+   - **Root directory**: leave as `/`.
+5. Click **Save and Deploy**. Cloudflare will build and publish the Worker — note the assigned URL, e.g. `https://links-telegram-bot.<your-subdomain>.workers.dev`.
+6. Open the new Worker → **Settings** → **Variables and Secrets** → **Add** each of these as **Secret** (not plain text):
+   - `TELEGRAM_BOT_TOKEN`
+   - `TELEGRAM_WEBHOOK_SECRET` (any long random hex — `openssl rand -hex 32`)
+   - `SUPABASE_URL`
+   - `SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SECRET_KEY`
+   - `ADMIN_USERNAME`
+   - `ADMIN_PASSWORD_HASH` (sha256 hex of your password — see step 3 above)
+   - `BOT_USERNAME`
 
-### 5. Ignite!
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) and log in with your credentials.
+   Click **Save and deploy** so the Worker picks them up.
+7. **Register the Telegram webhook** by visiting this URL in your browser (replace both placeholders with your real values):
+   ```
+   https://links-telegram-bot.<your-subdomain>.workers.dev/setup?secret=<TELEGRAM_WEBHOOK_SECRET>
+   ```
+   You should see `Webhook set to https://…/webhook/<secret>`.
+8. Open Telegram, message your bot — `/start`, then `/login admin yourpassword`.
 
----
-
-## 🧪 Testing
-
-The project includes a suite of automated tests using the native Node.js test runner.
-
-```bash
-# Run all tests
-npm test
-
-# Run a specific test file
-node --test ./lib/auth.test.ts
-```
-
----
-
-## 📖 User Guide
-
-### Adding a Link
-1.  **Paste**: Drop a URL into the input field.
-2.  **Wait**: Watch the **Page Title** and **Category** auto-fill in seconds.
-3.  **Save**: Hit Enter or click the `+` button. The **Title** ID increments automatically!
-
-### Restoring a Backup
-1.  Click the **Restore** (Upload) button in the header.
-2.  Select your `.json` backup file.
-3.  Confirm the merge. The system will skip duplicates and sync the "Next ID" counter to the new highest number.
-
----
-
-## ☁️ Deployment
-
-The easiest way to deploy is **Vercel**.
-
-1.  Push your code to a Git repository.
-2.  Import the project into Vercel.
-3.  Add your Environment Variables in the Vercel Dashboard.
-4.  **Deploy!**
-
----
-
-## 📜 License
-
-MIT License. Built for personal productivity.
+#### Updating later
+Push to the branch you connected, and Cloudflare will auto-rebuild and redeploy on every commit. To rotate a secret, edit it under **Settings → Variables and Secrets** and click **Save and deploy**.
