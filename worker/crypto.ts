@@ -12,8 +12,9 @@ export function randomToken(bytes = 32): string {
   return [...arr].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/** Constant-time string compare. */
-export function timingSafeEqual(a: string, b: string): boolean {
+/** Constant-time string compare. Returns false if either input is missing/empty. */
+export function timingSafeEqual(a: string | undefined | null, b: string | undefined | null): boolean {
+  if (!a || !b) return false;
   if (a.length !== b.length) return false;
   let out = 0;
   for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i);
