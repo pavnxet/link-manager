@@ -1,8 +1,43 @@
+```
+# Dependencies
 node_modules/
-.wrangler/
-.dev.vars
+
+# Build artifacts
+dist/
+build/
+target/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py.class
+
+# Logs
+*.log
+
+# Environment
 .env
 .env.local
-*.log
+.env.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
-dist/
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Temporary files
+*.tmp
+*.temp
+```

@@ -179,7 +179,7 @@ export class Bot {
       const link = await this.db.addLink({ owner_telegram_id: tgid, title, page_title, url });
       await this.tg.sendMessage(
         chat_id,
-        `✅ Saved <b>${escapeHtml(link.title)}</b>\n<code>${link.id.slice(0, 8)}</code>\n${escapeHtml(link.url)}`,
+        `✅ Saved <b>${escapeHtml(link.title)}</b>\n<code>${link.id}</code>\n${escapeHtml(link.url)}`,
       );
     } catch (e: any) {
       if (String(e.message).includes("duplicate") || String(e.message).includes("23505")) {
@@ -382,12 +382,12 @@ export class Bot {
 
   // ---------------- Helpers ----------------
   private async findByPrefix(owner: number, prefix: string): Promise<Link | null> {
-    // try exact UUID
-    if (/^[0-9a-f-]{36}$/i.test(prefix)) return this.db.getLink(owner, prefix);
+    // try exact numeric id
+    if (/^\d$/i.test(prefix)) return this.db.getLink(owner, prefix);
     // else search by ilike on id
     const url = new URL(`/rest/v1/links`, this.env.SUPABASE_URL);
     url.searchParams.set("owner_telegram_id", `eq.${owner}`);
-    url.searchParams.set("id", `like.${prefix}*`);
+    url.searchParams.set("id", `eq.${prefix}`);
     url.searchParams.set("limit", "2");
     url.searchParams.set("select", "*");
     const res = await fetch(url, {
@@ -414,7 +414,7 @@ function escapeHtml(s: string): string {
 function renderList(rows: Link[], page: number, total: number, pageSize: number, header = "Your links"): string {
   const lines = [`<b>${header}</b> — ${total} total`, ""];
   for (const l of rows) {
-    const id = l.id.slice(0, 8);
+    const id = String(l.id);
     const cat = l.category ? ` · <i>${escapeHtml(l.category)}</i>` : "";
     lines.push(`<code>${id}</code> <a href="${escapeHtml(l.url)}">${escapeHtml(l.title)}</a>${cat}`);
   }
@@ -442,7 +442,7 @@ function paginationKeyboard(page: number, total: number, pageSize: number, prefi
   return { inline_keyboard: row.length ? [row] : [] };
 }
 
-function linkActionsKeyboard(id: string) {
+function linkActionsKeyboard(id: number) {
   return {
     inline_keyboard: [[
       { text: "🗑️ Delete", callback_data: `del:${id}` },

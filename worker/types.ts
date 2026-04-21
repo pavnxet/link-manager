@@ -12,7 +12,7 @@ export interface Env {
 }
 
 export interface Link {
-  id: string;
+  id: number;
   owner_telegram_id: number;
   title: string;
   page_title: string | null;
