@@ -392,6 +392,14 @@ jobs:
 - **Supabase**: Upgrade plan for more database capacity
 - **Rate Limiting**: Built-in to prevent abuse
 
+### Dashboard Deployment Files
+
+The `worker/dist/index.js` file is provided specifically for Cloudflare Workers Dashboard deployment:
+- ✅ Self-contained (no external dependencies)
+- ✅ Plain JavaScript (TypeScript compiled)
+- ✅ HTML parser inlined
+- ✅ Ready to copy-paste into the web editor
+
 ## Security
 
 This project implements several security best practices:
