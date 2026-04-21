@@ -96,7 +96,7 @@
 link-vault-bot/
 ├── index.js                 # Root JS entry proxy for direct deploy integrations
 ├── worker/                 # Cloudflare Workers application
-│   ├── index.js            # JS worker entrypoint (re-exports src/index.ts)
+│   ├── index.js            # Optional JS proxy entrypoint for platform integrations
 │   ├── src/
 │   │   ├── index.ts        # Main entry point & webhook handler
 │   │   ├── supabase.ts     # Database client & operations
@@ -405,7 +405,7 @@ The `worker/dist/index.js` file is provided specifically for Cloudflare Workers 
 - ✅ Ready to copy-paste into the web editor
 
 The repository now also includes:
-- `worker/index.js` (worker entry for Wrangler `main`)
+- `worker/index.js` (optional JS proxy entrypoint)
 - `index.js` at repository root (proxy entry for direct platform integrations)
 
 ## Security

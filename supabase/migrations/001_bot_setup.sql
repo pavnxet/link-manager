@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS bot_sessions (
 
 -- Links table expected by worker runtime
 CREATE TABLE IF NOT EXISTS links (
-  id BIGSERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  display_number BIGINT NOT NULL,
   user_id UUID NOT NULL REFERENCES bot_users(id) ON DELETE CASCADE,
   telegram_user_id BIGINT NOT NULL,
   title TEXT NOT NULL,
@@ -33,20 +34,21 @@ CREATE TABLE IF NOT EXISTS links (
   is_archived BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT links_user_url_unique UNIQUE (user_id, url)
+  CONSTRAINT links_user_url_unique UNIQUE (user_id, url),
+  CONSTRAINT links_user_display_number_unique UNIQUE (user_id, display_number)
 );
 
 -- Rate limiting table expected by worker runtime
 CREATE TABLE IF NOT EXISTS rate_limits (
-  telegram_user_id BIGINT NOT NULL,
+  telegram_user_id BIGINT PRIMARY KEY,
   count INTEGER NOT NULL DEFAULT 1,
-  window_start TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (telegram_user_id, window_start)
+  window_start TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_links_user_id ON links(user_id);
 CREATE INDEX IF NOT EXISTS idx_links_telegram_user_id ON links(telegram_user_id);
+CREATE INDEX IF NOT EXISTS idx_links_display_number ON links(display_number);
 CREATE INDEX IF NOT EXISTS idx_links_created_at ON links(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON bot_sessions(telegram_user_id);
 CREATE INDEX IF NOT EXISTS idx_rate_limits_user ON rate_limits(telegram_user_id);
@@ -60,11 +62,32 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Assign per-user sequential display_number
+CREATE OR REPLACE FUNCTION assign_links_display_number()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.display_number IS NULL OR NEW.display_number <= 0 THEN
+    PERFORM pg_advisory_xact_lock(hashtext(NEW.user_id::text));
+    SELECT COALESCE(MAX(display_number), 0) + 1
+    INTO NEW.display_number
+    FROM links
+    WHERE user_id = NEW.user_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 DROP TRIGGER IF EXISTS trg_links_updated_at ON links;
 CREATE TRIGGER trg_links_updated_at
 BEFORE UPDATE ON links
 FOR EACH ROW
 EXECUTE FUNCTION set_links_updated_at();
+
+DROP TRIGGER IF EXISTS trg_links_display_number ON links;
+CREATE TRIGGER trg_links_display_number
+BEFORE INSERT ON links
+FOR EACH ROW
+EXECUTE FUNCTION assign_links_display_number();
 
 -- Cleanup old rate limit entries
 CREATE OR REPLACE FUNCTION cleanup_old_rate_limits()
@@ -81,16 +104,17 @@ CREATE OR REPLACE FUNCTION increment_rate_limit(
 )
 RETURNS void AS $$
 BEGIN
-  UPDATE rate_limits
-  SET count = count + 1
-  WHERE telegram_user_id = p_telegram_user_id
-    AND window_start >= p_window_start;
-
-  IF NOT FOUND THEN
-    INSERT INTO rate_limits (telegram_user_id, count, window_start)
-    VALUES (p_telegram_user_id, 1, NOW())
-    ON CONFLICT (telegram_user_id, window_start) DO UPDATE
-      SET count = rate_limits.count + 1;
-  END IF;
+  INSERT INTO rate_limits (telegram_user_id, count, window_start)
+  VALUES (p_telegram_user_id, 1, NOW())
+  ON CONFLICT (telegram_user_id) DO UPDATE
+  SET
+    count = CASE
+      WHEN rate_limits.window_start < p_window_start THEN 1
+      ELSE rate_limits.count + 1
+    END,
+    window_start = CASE
+      WHEN rate_limits.window_start < p_window_start THEN NOW()
+      ELSE rate_limits.window_start
+    END;
 END;
 $$ LANGUAGE plpgsql;

@@ -22423,11 +22423,11 @@ async function deleteLink(supabase, displayNumber, telegramUserId) {
     if (!userInfo.isAuthenticated || !userInfo.userId) {
       return { success: false, error: "User not authenticated" };
     }
-    const { data: link } = await supabase.from("links").select("id").eq("id", displayNumber).eq("user_id", userInfo.userId).single();
+    const { data: link } = await supabase.from("links").select("id").eq("display_number", displayNumber).eq("user_id", userInfo.userId).single();
     if (!link) {
       return { success: false, error: "Link not found or you do not have permission to delete it" };
     }
-    const { error } = await supabase.from("links").delete().eq("id", displayNumber).eq("user_id", userInfo.userId);
+    const { error } = await supabase.from("links").delete().eq("display_number", displayNumber).eq("user_id", userInfo.userId);
     if (error) {
       return { success: false, error: error.message };
     }
@@ -22449,7 +22449,7 @@ async function getLinks(supabase, limit = 20, offset = 0, searchQuery, telegramU
         return { success: false, error: "Not authenticated" };
       }
     }
-    query = query.order("id", { ascending: false }).range(offset, offset + limit - 1);
+    query = query.order("display_number", { ascending: false }).range(offset, offset + limit - 1);
     if (searchQuery) {
       query = query.or(`title.ilike.%${searchQuery}%,url.ilike.%${searchQuery}%,page_title.ilike.%${searchQuery}%`);
     }
@@ -22470,7 +22470,7 @@ async function getLinkByDisplayNumber(supabase, displayNumber, telegramUserId) {
     if (!userInfo.isAuthenticated || !userInfo.userId) {
       return { success: false, error: "Not authenticated", link: null };
     }
-    const { data, error } = await supabase.from("links").select("*").eq("id", displayNumber).eq("user_id", userInfo.userId).single();
+    const { data, error } = await supabase.from("links").select("*").eq("display_number", displayNumber).eq("user_id", userInfo.userId).single();
     if (error && error.code !== "PGRST116") {
       return { success: false, error: error.message };
     }
@@ -22487,7 +22487,7 @@ async function getAllLinksForBackup(supabase, telegramUserId) {
     if (!userInfo.isAuthenticated || !userInfo.userId) {
       return { success: false, error: "Not authenticated" };
     }
-    const { data, error } = await supabase.from("links").select("*").eq("user_id", userInfo.userId).order("id", { ascending: true });
+    const { data, error } = await supabase.from("links").select("*").eq("user_id", userInfo.userId).order("display_number", { ascending: true });
     if (error) {
       return { success: false, error: error.message };
     }
@@ -22511,7 +22511,7 @@ async function checkRateLimit(supabase, telegramUserId) {
         count: 1,
         window_start: now
       }, {
-        onConflict: "telegram_user_id,window_start"
+        onConflict: "telegram_user_id"
       });
       return { allowed: true, remaining: 9 };
     }
@@ -22632,7 +22632,8 @@ async function fetchPageTitle(url) {
 }
 __name(fetchPageTitle, "fetchPageTitle");
 function formatLinkMessage(link) {
-  return `\u{1F517} <b>#${link.id}</b>
+  const displayNumber = link.display_number ?? link.id;
+  return `\u{1F517} <b>#${displayNumber}</b>
 <b>Title:</b> ${escapeHtml(link.title)}
 <b>Page:</b> ${escapeHtml(link.page_title || "N/A")}
 <b>URL:</b> <a href="${escapeHtml(link.url)}">${escapeHtml(link.url)}</a>
@@ -22720,17 +22721,18 @@ app.post("/webhook", async (c) => {
         const title = decodeURIComponent(parts[2]) || "Untitled";
         const result = await saveLink(supabase, url, title, pageTitle, "General", userId);
         if (result.success && result.link) {
-          await answerCallbackQuery(env.TELEGRAM_BOT_TOKEN, callback.id, `\u2705 Saved as #${result.link.id}`);
+          const displayNumber = result.link.display_number;
+          await answerCallbackQuery(env.TELEGRAM_BOT_TOKEN, callback.id, `\u2705 Saved as #${displayNumber}`);
           await sendMessage(
             env.TELEGRAM_BOT_TOKEN,
             chatId,
             `\u2705 <b>Link Saved!</b>
 
-\u{1F517} <b>#${result.link.id}</b>
+\u{1F517} <b>#${displayNumber}</b>
 \u{1F4C4} ${escapeHtml(title)}
 \u{1F310} ${escapeHtml(pageTitle)}
 \u{1F517} <a href="${escapeHtml(url)}">${escapeHtml(url)}</a>`,
-            { inline_keyboard: [[{ text: "\u{1F5D1}\uFE0F Delete", callback_data: `delete:${result.link.id}` }]] }
+            { inline_keyboard: [[{ text: "\u{1F5D1}\uFE0F Delete", callback_data: `delete:${displayNumber}` }]] }
           );
         } else {
           await answerCallbackQuery(env.TELEGRAM_BOT_TOKEN, callback.id, "\u274C Failed to save", true);
@@ -22760,7 +22762,7 @@ app.post("/webhook", async (c) => {
             message += "No links found.";
           } else {
             for (const link of result.links) {
-              message += `\u{1F517} <b>#${link.id}</b> - ${escapeHtml(link.title)}
+              message += `\u{1F517} <b>#${link.display_number}</b> - ${escapeHtml(link.title)}
 `;
               message += `<a href="${escapeHtml(link.url)}">${escapeHtml(link.url)}</a>
 
@@ -22856,7 +22858,7 @@ Do you want to save this?`,
                 message2 += "No links found.";
               } else {
                 for (const link of listResult.links) {
-                  message2 += `\u{1F517} <b>#${link.id}</b> - ${escapeHtml(link.title)}
+                  message2 += `\u{1F517} <b>#${link.display_number}</b> - ${escapeHtml(link.title)}
 `;
                   message2 += `<a href="${escapeHtml(link.url)}">${escapeHtml(link.url)}</a>
 

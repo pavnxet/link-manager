@@ -185,7 +185,8 @@ export async function fetchPageTitle(url: string): Promise<string> {
 }
 
 export function formatLinkMessage(link: any): string {
-  return `🔗 <b>#${link.id}</b>\n` +
+  const displayNumber = link.display_number ?? link.id;
+  return `🔗 <b>#${displayNumber}</b>\n` +
     `<b>Title:</b> ${escapeHtml(link.title)}\n` +
     `<b>Page:</b> ${escapeHtml(link.page_title || 'N/A')}\n` +
     `<b>URL:</b> <a href="${escapeHtml(link.url)}">${escapeHtml(link.url)}</a>\n` +

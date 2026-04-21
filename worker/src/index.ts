@@ -73,16 +73,17 @@ app.post('/webhook', async (c) => {
         const result = await saveLink(supabase, url, title, pageTitle, 'General', userId);
 
         if (result.success && result.link) {
-          await answerCallbackQuery(env.TELEGRAM_BOT_TOKEN, callback.id, `✅ Saved as #${result.link.id}`);
+          const displayNumber = result.link.display_number;
+          await answerCallbackQuery(env.TELEGRAM_BOT_TOKEN, callback.id, `✅ Saved as #${displayNumber}`);
           await sendMessage(
             env.TELEGRAM_BOT_TOKEN, 
             chatId, 
             `✅ <b>Link Saved!</b>\n\n` +
-            `🔗 <b>#${result.link.id}</b>\n` +
+            `🔗 <b>#${displayNumber}</b>\n` +
             `📄 ${escapeHtml(title)}\n` +
             `🌐 ${escapeHtml(pageTitle)}\n` +
             `🔗 <a href="${escapeHtml(url)}">${escapeHtml(url)}</a>`,
-            { inline_keyboard: [[{ text: '🗑️ Delete', callback_data: `delete:${result.link.id}` }]] }
+            { inline_keyboard: [[{ text: '🗑️ Delete', callback_data: `delete:${displayNumber}` }]] }
           );
         } else {
           await answerCallbackQuery(env.TELEGRAM_BOT_TOKEN, callback.id, '❌ Failed to save', true);
@@ -119,7 +120,7 @@ app.post('/webhook', async (c) => {
             message += 'No links found.';
           } else {
             for (const link of result.links) {
-              message += `🔗 <b>#${link.id}</b> - ${escapeHtml(link.title)}\n`;
+              message += `🔗 <b>#${link.display_number}</b> - ${escapeHtml(link.title)}\n`;
               message += `<a href="${escapeHtml(link.url)}">${escapeHtml(link.url)}</a>\n\n`;
             }
           }
@@ -239,7 +240,7 @@ app.post('/webhook', async (c) => {
                 message += 'No links found.';
               } else {
                 for (const link of listResult.links) {
-                  message += `🔗 <b>#${link.id}</b> - ${escapeHtml(link.title)}\n`;
+                  message += `🔗 <b>#${link.display_number}</b> - ${escapeHtml(link.title)}\n`;
                   message += `<a href="${escapeHtml(link.url)}">${escapeHtml(link.url)}</a>\n\n`;
                 }
               }

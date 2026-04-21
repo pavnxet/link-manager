@@ -205,7 +205,7 @@ export async function deleteLink(
     const { data: link } = await supabase
       .from('links')
       .select('id')
-      .eq('id', displayNumber)
+      .eq('display_number', displayNumber)
       .eq('user_id', userInfo.userId)
       .single();
 
@@ -216,7 +216,7 @@ export async function deleteLink(
     const { error } = await supabase
       .from('links')
       .delete()
-      .eq('id', displayNumber)
+      .eq('display_number', displayNumber)
       .eq('user_id', userInfo.userId);
 
     if (error) {
@@ -253,7 +253,7 @@ export async function getLinks(
       }
     }
 
-    query = query.order('id', { ascending: false }).range(offset, offset + limit - 1);
+    query = query.order('display_number', { ascending: false }).range(offset, offset + limit - 1);
 
     if (searchQuery) {
       query = query.or(`title.ilike.%${searchQuery}%,url.ilike.%${searchQuery}%,page_title.ilike.%${searchQuery}%`);
@@ -287,7 +287,7 @@ export async function getLinkByDisplayNumber(
     const { data, error } = await supabase
       .from('links')
       .select('*')
-      .eq('id', displayNumber)
+      .eq('display_number', displayNumber)
       .eq('user_id', userInfo.userId)
       .single();
 
@@ -317,7 +317,7 @@ export async function getAllLinksForBackup(
       .from('links')
       .select('*')
       .eq('user_id', userInfo.userId)
-      .order('id', { ascending: true });
+      .order('display_number', { ascending: true });
 
     if (error) {
       return { success: false, error: error.message };
@@ -355,7 +355,7 @@ export async function checkRateLimit(
         count: 1,
         window_start: now
       }, {
-        onConflict: 'telegram_user_id,window_start'
+        onConflict: 'telegram_user_id'
       });
       return { allowed: true, remaining: 9 };
     }

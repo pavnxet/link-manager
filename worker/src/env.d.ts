@@ -7,7 +7,8 @@ export interface Env {
 }
 
 export interface Link {
-  id: number; // Auto-incremented integer ID
+  id: string; // UUID primary key
+  display_number: number; // Sequential display number used in bot UX
   user_id: string; // UUID of the owner
   telegram_user_id: number; // Telegram user ID for quick lookup
   title: string;
