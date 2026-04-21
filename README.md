@@ -144,6 +144,20 @@ The easiest way to deploy is **Vercel**.
 3.  Add your Environment Variables in the Vercel Dashboard.
 4.  **Deploy!**
 
+### Direct Deploy (Node server)
+
+This repository is also ready for direct deployment to Node-based hosts.
+
+```bash
+npm install
+npm run build
+npm start
+```
+
+- `next.config.ts` is configured with `output: "standalone"` for production packaging.
+- Root `index.js` starts `.next/standalone/server.js` when available, and falls back to `next start`.
+- Health endpoint is available at `GET /api/health`.
+
 ---
 
 ## 📜 License
