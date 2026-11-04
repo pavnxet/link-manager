@@ -2,8 +2,15 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "@/*": ["./*"],
-      "next/headers": ["./test/mocks/next-headers.js"]
+      "@/*": [
+        "./*"
+      ],
+      "next/headers": [
+        "./test/mocks/next-headers.js"
+      ],
+      "next/navigation": [
+        "./test/mocks/next-navigation.js"
+      ]
     }
   }
 }

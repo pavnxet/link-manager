@@ -17,7 +17,8 @@ export default function AddLinkForm({ onLinkAdded, refreshTrigger }: AddLinkForm
   const [loading, setLoading] = useState(false)
   const [scraping, setScraping] = useState(false)
 
-  // Fetch next ID on mount and when refreshTrigger changes
+  // Fetch next ID on mount and whenever the parent reports a change (any new link, however it was
+  // added). The parent owns this trigger, so there is exactly one place that decides to refresh.
   useEffect(() => {
     fetchNextId()
   }, [refreshTrigger])
@@ -94,7 +95,8 @@ export default function AddLinkForm({ onLinkAdded, refreshTrigger }: AddLinkForm
         setUrl('')
         setPageTitle('')
         setCategory('')
-        fetchNextId() // Get next ID for next entry
+        // No local fetchNextId() here: adding the link bumps refreshTrigger in the parent, which
+        // runs the effect above. Calling both produced two identical requests per save.
       } else {
           const err = await res.json()
           alert(`Failed to save link: ${err.error || 'Unknown error'}`)

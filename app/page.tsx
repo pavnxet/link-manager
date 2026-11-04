@@ -98,8 +98,10 @@ export default function Dashboard() {
   }
 
   const handleLinkAdded = (newLink: Link) => {
-    // Add to top if using created_at DESC, or just unshift
     setLinks(prev => [newLink, ...prev])
+    // Bump the trigger so the "Title / #" counter re-reads the vault. Without this an image
+    // uploaded by drop / paste / camera left the form sitting on the number that was just taken.
+    setRefreshTrigger(prev => prev + 1)
   }
 
   const handleRestoreComplete = () => {
