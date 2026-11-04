@@ -28,7 +28,7 @@ Say goodbye to "I'll read this later" disappearing into the void.
 *   **Live Search**: Instantly filter your library by title, URL, or category.
 *   **Inline Editing**: Fix typos or update categories without leaving the dashboard.
 *   **Safety First**: Confirmation prompts preventing accidental deletions.
-*   **Drag, Drop & Paste Image Hosting**: Drop an image anywhere on the dashboard — or paste one with `Ctrl+V` — and it is uploaded to [ImgBB](https://imgbb.com/) and saved as a vault entry with its hosted URL.
+*   **Drag, Drop, Paste & Camera Image Hosting**: Drop an image anywhere on the dashboard, paste one with `Ctrl+V`, or shoot it with the **Camera** button — it is uploaded to [ImgBB](https://imgbb.com/) and saved as a vault entry with its hosted URL.
 
 ### 💾 **Data Sovereignty**
 *   **Multi-Database Support**: Choose between **Supabase (PostgreSQL)** or **Turso (SQLite)** using the `DB_PROVIDER` setting.
@@ -145,7 +145,8 @@ No test needs a real ImgBB key or network access.
 3.  **Save**: Hit Enter or click the `+` button. The **Title** ID increments automatically!
 
 ### Uploading an Image
-Three ways, all identical under the hood:
+Four ways, all identical under the hood:
+*   **Camera** button in the header — opens a live preview from your webcam or phone camera and uploads the frame you capture.
 *   **Upload Image** button in the header — opens a file picker (multi-select).
 *   **Drag & drop** any image file (PNG, JPEG, GIF, WebP, BMP, TIFF, AVIF, SVG — up to 32 MB) anywhere on the dashboard.
 *   **Paste** with `Ctrl+V` / `Cmd+V` when the clipboard holds an image (a screenshot, a copied picture, "Copy image" from a browser). Pasting text or URLs into the fields still works normally.
@@ -153,6 +154,13 @@ Three ways, all identical under the hood:
 The file is sent to `/api/upload`, uploaded to ImgBB with your server-side key.
 It then appears in the table as a new entry categorised `🖼️ #Image`. A toast shows the
     hosted URL with a one-click copy button.
+
+**About the camera:** frames are captured in the browser and encoded to JPEG before upload, scaled
+to at most 2048 px on the long edge so a 4K webcam does not produce a 6 MB file. The **Switch**
+button toggles between rear and front camera. `getUserMedia` needs a secure context (https or
+localhost); if it is unavailable or the permission is denied, the modal offers a one-click fallback
+that opens the device's own camera app via `<input capture="environment">`. No video ever leaves the
+browser — only the single captured frame is uploaded.
 
 The ImgBB API key stays on the server. The browser never receives it — the client only talks to
 `/api/upload`.

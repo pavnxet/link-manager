@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ImageUp, Search } from 'lucide-react'
+import { Camera, ImageUp, Search } from 'lucide-react'
 import LinkTable, { Link } from '@/components/LinkTable'
 import AddLinkForm from '@/components/AddLinkForm'
 import BackupRestore from '@/components/BackupRestore'
 import ImageDropZone from '@/components/ImageDropZone'
+import CameraCapture from '@/components/CameraCapture'
 import { useImageUpload } from '@/components/useImageUpload'
 
 export default function Dashboard() {
@@ -13,6 +14,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [cameraOpen, setCameraOpen] = useState(false)
 
   const fetchLinks = async (query = '') => {
     setLoading(true)
@@ -95,12 +97,22 @@ export default function Dashboard() {
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-800 pb-6">
           <div>
              <h1 className="text-3xl font-bold tracking-tight text-white">Link Vault</h1>
-             <p className="text-gray-400 mt-1">Personal Knowledge Hub · drop or paste an image, or use Upload Image</p>
+             <p className="text-gray-400 mt-1">Personal Knowledge Hub · drop, paste or shoot an image</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={openPicker}
+              onClick={() => setCameraOpen(true)}
+              disabled={pending > 0}
+              className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-blue-600 hover:text-white disabled:opacity-50"
+              title="Take a photo with the camera"
+            >
+              <Camera className="h-4 w-4" />
+              Camera
+            </button>
+            <button
+              type="button"
+              onClick={() => openPicker()}
               disabled={pending > 0}
               className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-blue-600 hover:text-white disabled:opacity-50"
             >
@@ -134,6 +146,13 @@ export default function Dashboard() {
         </div>
       </div>
       </ImageDropZone>
+
+      <CameraCapture
+        open={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        onCapture={file => void uploadFiles([file])}
+        onFallback={() => openPicker('environment')}
+      />
     </div>
   )
 }

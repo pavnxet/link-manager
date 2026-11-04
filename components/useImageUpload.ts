@@ -82,11 +82,13 @@ export function useImageUpload(onUploaded: (link: Link) => void) {
     [pushToast, uploadFile],
   )
 
-  const openPicker = useCallback(() => {
+  const openPicker = useCallback((capture?: 'environment' | 'user') => {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
-    input.multiple = true
+    // `capture` makes a phone open its camera app directly instead of the gallery.
+    if (capture) input.capture = capture
+    else input.multiple = true
     input.onchange = () => {
       if (input.files?.length) void uploadFiles(input.files)
     }
