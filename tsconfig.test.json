@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./*"],
+      "next/headers": ["./test/mocks/next-headers.js"]
+    }
+  }
+}
