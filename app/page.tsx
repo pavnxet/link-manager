@@ -5,6 +5,7 @@ import { Search } from 'lucide-react'
 import LinkTable, { Link } from '@/components/LinkTable'
 import AddLinkForm from '@/components/AddLinkForm'
 import BackupRestore from '@/components/BackupRestore'
+import ImageDropZone from '@/components/ImageDropZone'
 
 export default function Dashboard() {
   const [links, setLinks] = useState<Link[]>([])
@@ -71,7 +72,7 @@ export default function Dashboard() {
 
   const handleLinkAdded = (newLink: Link) => {
     // Add to top if using created_at DESC, or just unshift
-    setLinks([newLink, ...links])
+    setLinks(prev => [newLink, ...prev])
   }
 
   const handleRestoreComplete = () => {
@@ -81,11 +82,12 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 p-4 md:p-8 font-sans">
+      <ImageDropZone onUploaded={handleLinkAdded}>
       <div className="max-w-7xl mx-auto space-y-8">
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-800 pb-6">
           <div>
              <h1 className="text-3xl font-bold tracking-tight text-white">Link Vault</h1>
-             <p className="text-gray-400 mt-1">Personal Knowledge Hub</p>
+             <p className="text-gray-400 mt-1">Personal Knowledge Hub · drop an image anywhere to upload it</p>
           </div>
           <div className="flex items-center gap-4">
             <BackupRestore onRestoreComplete={handleRestoreComplete} />
@@ -114,6 +116,7 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+      </ImageDropZone>
     </div>
   )
 }

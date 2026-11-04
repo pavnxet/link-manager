@@ -28,6 +28,7 @@ Say goodbye to "I'll read this later" disappearing into the void.
 *   **Live Search**: Instantly filter your library by title, URL, or category.
 *   **Inline Editing**: Fix typos or update categories without leaving the dashboard.
 *   **Safety First**: Confirmation prompts preventing accidental deletions.
+*   **Drag & Drop Image Hosting**: Drop an image anywhere on the dashboard and it is uploaded to [ImgBB](https://imgbb.com/) and saved as a vault entry with its hosted URL.
 
 ### 💾 **Data Sovereignty**
 *   **Multi-Database Support**: Choose between **Supabase (PostgreSQL)** or **Turso (SQLite)** using the `DB_PROVIDER` setting.
@@ -92,6 +93,9 @@ TURSO_AUTH_TOKEN=your_turso_auth_token
 # Admin Access (You choose these!)
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=super_secret_password
+
+# ImgBB image uploads (server-side only)
+IMGBB_API_KEY=your_imgbb_api_key
 ```
 
 ### 4. Setup Database
@@ -114,10 +118,22 @@ The project includes a suite of automated tests using the native Node.js test ru
 ```bash
 # Run all tests
 npm test
-
-# Run a specific test file
-node --test ./lib/auth.test.ts
 ```
+
+The runner (`test/run.mjs`) collects every `*.test.ts` file under `app/`, `lib/` and `components/`
+and executes them with [tsx](https://tsx.is/), so no build step is needed. `tsconfig.test.json`
+maps `next/headers` to a mock used by the login route test.
+
+### Image upload tests
+
+*   `lib/imgbb.test.ts` — magic-byte sniffing, base64 request shape, key handling, and every
+    ImgBB failure mode (missing key, oversize, HTTP error, non-JSON, network failure). The API
+    key is asserted never to appear in an error message.
+*   `app/api/upload/route.test.ts` — the `/api/upload` route end to end against a temporary
+    SQLite database, with ImgBB mocked: 400/413/415/500/502 paths, the happy path that saves a
+    `🖼️ #Image` link, and the case where the image uploads but the vault insert fails.
+
+No test needs a real ImgBB key or network access.
 
 ---
 
@@ -127,6 +143,15 @@ node --test ./lib/auth.test.ts
 1.  **Paste**: Drop a URL into the input field.
 2.  **Wait**: Watch the **Page Title** and **Category** auto-fill in seconds.
 3.  **Save**: Hit Enter or click the `+` button. The **Title** ID increments automatically!
+
+### Uploading an Image
+1.  **Drag** any image file (PNG, JPEG, GIF, WebP, BMP, TIFF, AVIF, SVG — up to 32 MB) onto the dashboard.
+2.  **Drop** it: the file is sent to `/api/upload`, uploaded to ImgBB with your server-side key.
+3.  **Done**: it appears in the table as a new entry categorised `🖼️ #Image`. A toast shows the
+    hosted URL with a one-click copy button.
+
+The ImgBB API key stays on the server. The browser never receives it — the client only talks to
+`/api/upload`.
 
 ### Restoring a Backup
 1.  Click the **Restore** (Upload) button in the header.
