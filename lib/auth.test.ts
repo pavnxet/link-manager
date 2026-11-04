@@ -73,6 +73,19 @@ describe('JWT secret handling', () => {
     }
   })
 
+  it('treats every token as invalid (not a crash) when the secret is missing', async () => {
+    setNodeEnv('production')
+    delete process.env.JWT_SECRET
+    resetKeyCache()
+    try {
+      // Verification fails closed: middleware sends the visitor to /login instead of 500-ing
+      // every route while the deployment is misconfigured.
+      assert.strictEqual(await verifyToken('anything.token.here'), null)
+    } finally {
+      restore()
+    }
+  })
+
   it('signs with a real secret in production', async () => {
     setNodeEnv('production')
     process.env.JWT_SECRET = 'x'.repeat(MIN_SECRET_LENGTH + 8)
