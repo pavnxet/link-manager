@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search } from 'lucide-react'
+import { ImageUp, Search } from 'lucide-react'
 import LinkTable, { Link } from '@/components/LinkTable'
 import AddLinkForm from '@/components/AddLinkForm'
 import BackupRestore from '@/components/BackupRestore'
 import ImageDropZone from '@/components/ImageDropZone'
+import { useImageUpload } from '@/components/useImageUpload'
 
 export default function Dashboard() {
   const [links, setLinks] = useState<Link[]>([])
@@ -80,16 +81,32 @@ export default function Dashboard() {
       setRefreshTrigger(prev => prev + 1)
   }
 
+  const { pending, toasts, uploadFiles, openPicker, dismissToast } = useImageUpload(handleLinkAdded)
+
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 p-4 md:p-8 font-sans">
-      <ImageDropZone onUploaded={handleLinkAdded}>
+      <ImageDropZone
+        onFiles={uploadFiles}
+        pending={pending}
+        toasts={toasts}
+        onDismiss={dismissToast}
+      >
       <div className="max-w-7xl mx-auto space-y-8">
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-800 pb-6">
           <div>
              <h1 className="text-3xl font-bold tracking-tight text-white">Link Vault</h1>
-             <p className="text-gray-400 mt-1">Personal Knowledge Hub · drop an image anywhere to upload it</p>
+             <p className="text-gray-400 mt-1">Personal Knowledge Hub · drop an image anywhere, or use Upload Image</p>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={openPicker}
+              disabled={pending > 0}
+              className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-blue-600 hover:text-white disabled:opacity-50"
+            >
+              <ImageUp className="h-4 w-4" />
+              Upload Image
+            </button>
             <BackupRestore onRestoreComplete={handleRestoreComplete} />
           </div>
         </header>

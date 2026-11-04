@@ -1,87 +1,32 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, Clipboard, ImageUp, Loader2, X, XCircle } from 'lucide-react'
-import type { Link } from './LinkTable'
+import type { UploadToast } from './useImageUpload'
 
 interface ImageDropZoneProps {
-  onUploaded: (link: Link) => void
+  /** Receives dropped files. */
+  onFiles: (files: FileList | File[]) => void
+  /** Number of uploads currently in flight. */
+  pending: number
+  toasts: UploadToast[]
+  onDismiss: (id: number) => void
   children: React.ReactNode
 }
 
-interface Toast {
-  id: number
-  kind: 'success' | 'error'
-  message: string
-  url?: string
-}
-
-export default function ImageDropZone({ onUploaded, children }: ImageDropZoneProps) {
+/**
+ * Makes the whole dashboard a drop target for images and renders upload
+ * feedback. The trigger button and upload logic live in `useImageUpload`.
+ */
+export default function ImageDropZone({
+  onFiles,
+  pending,
+  toasts,
+  onDismiss,
+  children,
+}: ImageDropZoneProps) {
   const [dragging, setDragging] = useState(false)
-  const [pending, setPending] = useState(0)
-  const [toasts, setToasts] = useState<Toast[]>([])
   const dragDepth = useRef(0)
-  const toastId = useRef(0)
-
-  const pushToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = ++toastId.current
-    setToasts(prev => [...prev, { ...toast, id }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 8000)
-  }, [])
-
-  const uploadFile = useCallback(
-    async (file: File) => {
-      setPending(n => n + 1)
-      try {
-        const body = new FormData()
-        body.append('image', file)
-        const res = await fetch('/api/upload', { method: 'POST', body })
-        const data = await res.json().catch(() => ({}))
-
-        if (!res.ok) {
-          pushToast({
-            kind: 'error',
-            message: data.error || `Upload failed for ${file.name}`,
-          })
-          return
-        }
-
-        if (data.link) {
-          onUploaded(data.link as Link)
-          pushToast({ kind: 'success', message: `${file.name} uploaded and saved`, url: data.image?.url })
-        } else {
-          pushToast({
-            kind: 'success',
-            message: data.warning || `${file.name} uploaded (not saved to vault)`,
-            url: data.image?.url,
-          })
-        }
-      } catch (error) {
-        console.error('Image upload failed', error)
-        pushToast({ kind: 'error', message: `Could not upload ${file.name}` })
-      } finally {
-        setPending(n => n - 1)
-      }
-    },
-    [onUploaded, pushToast],
-  )
-
-  const handleFiles = useCallback(
-    async (files: FileList | File[]) => {
-      const list = Array.from(files)
-      const images = list.filter(f => f.type.startsWith('image/'))
-      const rejected = list.length - images.length
-
-      if (rejected > 0) {
-        pushToast({ kind: 'error', message: 'Only image files can be uploaded' })
-      }
-      // Upload one at a time so the vault numbering stays in order.
-      for (const image of images) {
-        await uploadFile(image)
-      }
-    },
-    [pushToast, uploadFile],
-  )
 
   useEffect(() => {
     const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files')
@@ -107,7 +52,7 @@ export default function ImageDropZone({ onUploaded, children }: ImageDropZonePro
       e.preventDefault()
       dragDepth.current = 0
       setDragging(false)
-      if (e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files)
+      if (e.dataTransfer?.files?.length) onFiles(e.dataTransfer.files)
     }
 
     window.addEventListener('dragenter', onDragEnter)
@@ -120,7 +65,7 @@ export default function ImageDropZone({ onUploaded, children }: ImageDropZonePro
       window.removeEventListener('dragleave', onDragLeave)
       window.removeEventListener('drop', onDrop)
     }
-  }, [handleFiles])
+  }, [onFiles])
 
   return (
     <>
@@ -160,7 +105,7 @@ export default function ImageDropZone({ onUploaded, children }: ImageDropZonePro
               <p className="flex-1 break-words text-gray-200">{toast.message}</p>
               <button
                 type="button"
-                onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                onClick={() => onDismiss(toast.id)}
                 className="text-gray-500 hover:text-gray-300"
                 aria-label="Dismiss"
               >
@@ -173,7 +118,7 @@ export default function ImageDropZone({ onUploaded, children }: ImageDropZonePro
                 onClick={() => navigator.clipboard?.writeText(toast.url as string)}
                 className="mt-2 flex w-full items-center gap-1.5 rounded bg-gray-800 px-2 py-1.5 text-xs text-blue-300 hover:bg-gray-700"
               >
-                <Clipboard className="h-3 w-3" />
+                <Clipboard className="h-3 w-3 shrink-0" />
                 <span className="truncate">{toast.url}</span>
               </button>
             )}
