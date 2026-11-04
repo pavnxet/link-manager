@@ -71,3 +71,30 @@ describe('POST /api/auth/login', () => {
     process.env.ADMIN_USERNAME = 'admin';
   });
 });
+
+describe('POST /api/auth/login rate limiting', () => {
+  test('blocks after five attempts from the same client', async () => {
+    process.env.ADMIN_USERNAME = 'admin'
+    process.env.ADMIN_PASSWORD = 'password'
+
+    const attempt = () =>
+      POST(
+        new Request('http://localhost/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '198.51.100.77' },
+          body: JSON.stringify({ username: 'admin', password: 'wrong' }),
+        }),
+      )
+
+    const statuses: number[] = []
+    for (let i = 0; i < 6; i += 1) statuses.push((await attempt()).status)
+
+    assert.deepStrictEqual(statuses.slice(0, 5), [401, 401, 401, 401, 401])
+    assert.strictEqual(statuses[5], 429, 'the sixth attempt must be rate limited')
+
+    const res = await attempt()
+    assert.strictEqual(res.status, 429)
+    assert.ok(Number(res.headers.get('retry-after')) > 0, 'Retry-After should be set')
+    assert.match((await res.json()).message, /Too many attempts/)
+  })
+})

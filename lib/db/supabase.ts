@@ -1,6 +1,11 @@
 import { getSupabase } from '../supabase';
 import { DbClient, Link, LinkInsert, LinkUpdate } from '../db';
 
+/** PostgREST treats these as filter syntax, so a search containing them produced a 500. */
+function filterTerm(query: string): string {
+  return query.replace(/[,()"\\]/g, ' ').trim()
+}
+
 export class SupabaseDbClient implements DbClient {
   async getLinks(query?: string | null): Promise<Link[]> {
     let dbQuery = getSupabase()
@@ -9,7 +14,12 @@ export class SupabaseDbClient implements DbClient {
       .order('created_at', { ascending: false });
 
     if (query) {
-      dbQuery = dbQuery.or(`title.ilike.%${query}%,page_title.ilike.%${query}%,url.ilike.%${query}%`);
+      const term = filterTerm(query);
+      if (term) {
+        dbQuery = dbQuery.or(
+          `title.ilike.%${term}%,page_title.ilike.%${term}%,category.ilike.%${term}%,url.ilike.%${term}%`,
+        );
+      }
     }
 
     const { data, error } = await dbQuery;
@@ -118,14 +128,16 @@ export class SupabaseDbClient implements DbClient {
       created_at: link.created_at || new Date().toISOString(),
     }));
 
-    const { error } = await getSupabase()
+    const { data, error } = await getSupabase()
       .from('links')
-      .upsert(linksToInsert, { onConflict: 'url', ignoreDuplicates: true });
+      .upsert(linksToInsert, { onConflict: 'url', ignoreDuplicates: true })
+      .select('id');
 
     if (error) {
       throw error;
     }
 
-    return { success: true, count: linksToInsert.length };
+    // ignoreDuplicates skips rows that already exist, so the inserted count is what came back.
+    return { success: true, count: data?.length ?? 0 };
   }
 }

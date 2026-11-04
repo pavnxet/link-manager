@@ -14,13 +14,20 @@ export interface Link {
 
 interface LinkTableProps {
   links: Link[]
-  onUpdate: (id: string, data: Partial<Link>) => Promise<void>
+  /** Resolves true when the save landed. */
+  onUpdate: (id: string, data: Partial<Link>) => Promise<boolean>
   onDelete: (id: string) => Promise<void>
+}
+
+/** Only http(s) links are rendered as hrefs, so a stored javascript: URL cannot execute. */
+function safeHref(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : '#'
 }
 
 export default function LinkTable({ links, onUpdate, onDelete }: LinkTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<Link>>({})
+  const [saveError, setSaveError] = useState('')
 
   const startEdit = (link: Link) => {
     setEditingId(link.id)
@@ -33,12 +40,23 @@ export default function LinkTable({ links, onUpdate, onDelete }: LinkTableProps)
   }
 
   const saveEdit = async (id: string) => {
-    await onUpdate(id, editForm)
+    setSaveError('')
+    const saved = await onUpdate(id, editForm)
+    if (!saved) {
+      setSaveError('Could not save that change — it was not applied.')
+      return
+    }
     setEditingId(null)
     setEditForm({})
   }
 
   return (
+    <div className="space-y-2">
+      {saveError && (
+        <div className="rounded-lg border border-red-800 bg-red-950/40 px-4 py-2 text-sm text-red-300">
+          {saveError}
+        </div>
+      )}
     <div className="overflow-x-auto rounded-lg border border-gray-700 shadow-md">
       <table className="min-w-full divide-y divide-gray-700 bg-gray-800 text-sm">
         <thead className="bg-gray-900 text-gray-400">
@@ -117,7 +135,7 @@ export default function LinkTable({ links, onUpdate, onDelete }: LinkTableProps)
                     </td>
                     <td className="px-4 py-3 align-top">
                       <a
-                        href={link.url}
+                        href={safeHref(link.url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1 text-blue-400 hover:text-blue-300 max-w-xs group"
@@ -156,6 +174,7 @@ export default function LinkTable({ links, onUpdate, onDelete }: LinkTableProps)
           )}
         </tbody>
       </table>
+    </div>
     </div>
   )
 }

@@ -1,9 +1,23 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { signToken } from '@/lib/auth'
+import { RateLimiter, clientKey } from '@/lib/rate-limit'
+
+// 5 failed attempts per 15 minutes per client. Module scope, so it survives between requests
+// within one server instance.
+const loginLimiter = new RateLimiter(5, 15 * 60 * 1000)
 
 export async function POST(req: Request) {
   try {
+    const key = clientKey(req)
+    const limit = loginLimiter.check(key)
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { success: false, message: `Too many attempts. Try again in ${Math.ceil(limit.retryAfterSeconds / 60)} minute(s).` },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+      )
+    }
+
     const { username, password } = await req.json()
 
     // Retrieve environment variables

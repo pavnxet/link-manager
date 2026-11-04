@@ -17,11 +17,14 @@ Say goodbye to "I'll read this later" disappearing into the void.
 
 ### 🔒 **Fortress-Level Privacy**
 *   **Zero Public Access**: No sign-up page. Access is strictly controlled via server-side environment secrets (`ADMIN_USERNAME` & `ADMIN_PASSWORD`).
-*   **Middleware Protection**: Every route is guarded. Unauthorized visitors get a 404 or a login screen.
+*   **Middleware Protection**: Every route is guarded. Unauthorized visitors get a login screen; API callers get a JSON `401`.
+*   **Signed Sessions**: the cookie is an HMAC-signed JWT. `JWT_SECRET` is mandatory in production — the app refuses to issue tokens without it rather than falling back to a published default.
+*   **Login Throttling**: five failed attempts per 15 minutes per client, then `429` with `Retry-After`.
+*   **Explicit Logout**: clears the session cookie instead of leaving a token alive for its full 7 days.
 
 ### ⚡ **Rapid "Paste & Go" Entry**
 *   **Smart Auto-Counter**: Automatically suggests the next ID (e.g., `#42` -> `#43`) based on your entire database history.
-*   **Auto-Scraping**: Paste a URL, and the system instantly fetches the page title.
+*   **Auto-Scraping**: Paste a URL, and the system instantly fetches the page title. The fetch is guarded: http(s) only, private/loopback/link-local and metadata addresses are refused (including after redirects and DNS resolution), with a 5 s timeout and a 512 KB response cap.
 *   **Intelligent Categorization**: Detects the domain (YouTube, GitHub, etc.) and keywords to auto-assign emojis and hashtags (e.g., 📺 #Video, 💻 #Code).
 
 ### 🎛️ **Powerful Management**
@@ -94,6 +97,9 @@ TURSO_AUTH_TOKEN=your_turso_auth_token
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=super_secret_password
 
+# Session signing key — REQUIRED in production (min 16 chars, 32+ recommended)
+JWT_SECRET=replace-with-a-long-random-string
+
 # ImgBB image uploads (server-side only)
 IMGBB_API_KEY=your_imgbb_api_key
 ```
@@ -134,6 +140,11 @@ maps `next/headers` to a mock used by the login route test.
     `🖼️ #Image` link, and the case where the image uploads but the vault insert fails.
 
 No test needs a real ImgBB key or network access.
+
+The suite also covers the security-critical helpers directly: `lib/url-safety.test.ts` (SSRF ranges,
+DNS rebinding, redirect handling), `lib/scrape.test.ts`, `lib/rate-limit.test.ts`,
+`lib/backup.test.ts` (restore validation) and `lib/db/turso.test.ts` (category search, next-id
+counting, real insert counts, duplicate-URL mapping).
 
 ---
 

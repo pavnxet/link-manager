@@ -15,18 +15,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  const isApi = pathname.startsWith('/api/')
+
+  // An API caller that is logged out needs a 401 it can read, not a 307 to an HTML login page
+  // (which fetch() follows happily, leaving the client to parse HTML as JSON).
+  const unauthorized = () =>
+    isApi
+      ? NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      : NextResponse.redirect(new URL('/login', request.url))
+
   const token = request.cookies.get('auth-token')
 
-  if (!token) {
-    const loginUrl = new URL('/login', request.url)
-    return NextResponse.redirect(loginUrl)
-  }
+  if (!token) return unauthorized()
 
   const payload = await verifyToken(token.value)
-  if (!payload) {
-    const loginUrl = new URL('/login', request.url)
-    return NextResponse.redirect(loginUrl)
-  }
+  if (!payload) return unauthorized()
 
   return NextResponse.next()
 }

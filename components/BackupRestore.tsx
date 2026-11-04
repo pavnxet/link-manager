@@ -23,8 +23,9 @@ export default function BackupRestore({ onRestoreComplete }: BackupRestoreProps)
         a.download = `link-vault-backup-${new Date().toISOString().split('T')[0]}.json`
         document.body.appendChild(a)
         a.click()
-        window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
+        // Revoking immediately can cancel the download in some browsers.
+        setTimeout(() => window.URL.revokeObjectURL(url), 60_000)
       } else {
           alert('Failed to download backup.')
       }
@@ -60,7 +61,8 @@ export default function BackupRestore({ onRestoreComplete }: BackupRestoreProps)
 
                 if (res.ok) {
                     const data = await res.json()
-                    alert(`Restore complete! ${data.count} links processed.`)
+                    const skipped = data.skipped ? `, ${data.skipped} already present` : ''
+                    alert(`Restore complete! ${data.count} links added${skipped}.`)
                     onRestoreComplete()
                 } else {
                     const err = await res.json()

@@ -3,21 +3,26 @@ import { DbClient, Link, LinkInsert, LinkUpdate } from '../db';
 
 let tursoClient: Client | null = null;
 
+/** Escape LIKE metacharacters so a search for "50%" does not match everything. */
+function escapeLike(term: string): string {
+  return term.replace(/[\\%_]/g, ch => `\\${ch}`);
+}
+
 function getTursoClient() {
   if (!tursoClient) {
     const url = process.env.TURSO_DATABASE_URL;
     const authToken = process.env.TURSO_AUTH_TOKEN;
 
+    // Fail loudly instead of quietly writing to a local file: on a serverless host that file is
+    // either read-only or thrown away, so the vault would look empty and silently lose writes.
     if (!url || !authToken) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('Missing Turso environment variables');
-      }
+      throw new Error(
+        'Turso is not configured: set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN ' +
+          '(DB_PROVIDER=turso), or switch DB_PROVIDER to supabase',
+      );
     }
 
-    tursoClient = createClient({
-      url: url || 'file:local.db',
-      authToken: authToken,
-    });
+    tursoClient = createClient({ url, authToken });
   }
   return tursoClient;
 }
@@ -25,17 +30,22 @@ function getTursoClient() {
 export class TursoDbClient implements DbClient {
   async getLinks(query?: string | null): Promise<Link[]> {
     const client = getTursoClient();
-    let sql = 'SELECT * FROM links ORDER BY created_at DESC';
+    // datetime() parses both the ISO strings this app writes and SQLite's CURRENT_TIMESTAMP
+    // default, so rows created either way sort together.
+    let sql = 'SELECT * FROM links ORDER BY datetime(created_at) DESC';
     let args: string[] = [];
 
     if (query) {
       sql = `
-        SELECT * FROM links 
-        WHERE title LIKE ? OR page_title LIKE ? OR url LIKE ? 
-        ORDER BY created_at DESC
+        SELECT * FROM links
+        WHERE title LIKE ? ESCAPE '\\'
+           OR page_title LIKE ? ESCAPE '\\'
+           OR category LIKE ? ESCAPE '\\'
+           OR url LIKE ? ESCAPE '\\'
+        ORDER BY datetime(created_at) DESC
       `;
-      const likeQuery = `%${query}%`;
-      args = [likeQuery, likeQuery, likeQuery];
+      const likeQuery = `%${escapeLike(query)}%`;
+      args = [likeQuery, likeQuery, likeQuery, likeQuery];
     }
 
     const { rows } = await client.execute({ sql, args });
@@ -111,7 +121,17 @@ export class TursoDbClient implements DbClient {
     args.push(id);
     const sql = `UPDATE links SET ${updates.join(', ')} WHERE id = ?`;
 
-    await client.execute({ sql, args });
+    try {
+      await client.execute({ sql, args });
+    } catch (err: unknown) {
+      const error = err as Error;
+      if (error.message?.includes('UNIQUE constraint failed')) {
+        const customError = new Error('URL already exists') as Error & { code: string };
+        customError.code = '23505';
+        throw customError;
+      }
+      throw error;
+    }
 
     return this.getLinkById(id) as Promise<Link>;
   }
@@ -132,10 +152,13 @@ export class TursoDbClient implements DbClient {
       // we check that CAST(title AS INTEGER) is not 0 for non-zero strings or similar tricks,
       // but a simple approach for SQLite without REGEXP:
       // Since `title` containing only digits will convert to an integer nicely, we can do:
+      // TRIM + GLOB rather than `title = CAST(CAST(title AS INTEGER) AS TEXT)`: the old comparison
+      // silently dropped padded or spaced titles ('007', ' 42 '), so a restored backup could make
+      // the counter jump backwards and hand out numbers that already exist.
       const { rows } = await client.execute({
-        sql: `SELECT MAX(CAST(title AS INTEGER)) as maxId 
-               FROM links 
-               WHERE title = CAST(CAST(title AS INTEGER) AS TEXT)`
+        sql: `SELECT MAX(CAST(TRIM(title) AS INTEGER)) as maxId
+               FROM links
+               WHERE TRIM(title) <> '' AND TRIM(title) NOT GLOB '*[^0-9]*'`
       });
 
       const maxId = rows[0]?.maxId;
@@ -173,9 +196,11 @@ export class TursoDbClient implements DbClient {
       };
     });
 
-    // Run all inserts in a transaction using a batch
-    await client.batch(statements, 'write');
+    // Run all inserts in a transaction using a batch, then report what actually landed:
+    // ON CONFLICT DO NOTHING means the input length is not the inserted count.
+    const results = await client.batch(statements, 'write');
+    const inserted = results.reduce((sum, result) => sum + Number(result.rowsAffected ?? 0), 0);
 
-    return { success: true, count: links.length };
+    return { success: true, count: inserted };
   }
 }

@@ -1,7 +1,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+// Service role only. Falling back to the anon key (a NEXT_PUBLIC_ value, i.e. published to the
+// browser) combined with RLS being disabled meant the whole table was readable by anyone.
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 let supabaseInstance: SupabaseClient | null = null
 
@@ -9,7 +11,10 @@ export function getSupabase() {
   if (supabaseInstance) return supabaseInstance
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL and either SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY) are missing.')
+    throw new Error(
+      'Supabase is not configured: set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY ' +
+        '(the anon key is not accepted — it is public and cannot bypass RLS)',
+    )
   }
 
   supabaseInstance = createClient(supabaseUrl, supabaseKey)

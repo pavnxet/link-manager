@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Camera, ImageUp, Search } from 'lucide-react'
+import { useRef, useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Camera, ImageUp, LogOut, Search } from 'lucide-react'
 import LinkTable, { Link } from '@/components/LinkTable'
 import AddLinkForm from '@/components/AddLinkForm'
 import BackupRestore from '@/components/BackupRestore'
@@ -15,6 +16,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [cameraOpen, setCameraOpen] = useState(false)
+  const router = useRouter()
+  const skipFirstSearch = useRef(true)
 
   const fetchLinks = async (query = '') => {
     setLoading(true)
@@ -37,40 +40,61 @@ export default function Dashboard() {
     fetchLinks()
   }, [])
 
-  // Debounce search
+  // Debounce search. The first run is skipped: the effect above already fetched on mount, so
+  // this used to fire a second identical request 500 ms later on every page load.
   useEffect(() => {
+    if (skipFirstSearch.current) {
+      skipFirstSearch.current = false
+      return
+    }
     const timer = setTimeout(() => {
       fetchLinks(searchQuery)
     }, 500)
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  const handleUpdate = async (id: string, data: Partial<Link>) => {
+  // Returns whether the save landed: the table used to close the editor either way, so a failed
+  // PUT looked like a successful edit until the page was reloaded.
+  const handleUpdate = async (id: string, data: Partial<Link>): Promise<boolean> => {
     try {
       const res = await fetch(`/api/links/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      if (res.ok) {
-        setLinks(links.map(l => l.id === id ? { ...l, ...data } : l))
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        console.error('Failed to update link', err)
+        return false
       }
+      const updated = await res.json().catch(() => null)
+      setLinks(prev =>
+        prev.map(l => (l.id === id ? { ...l, ...data, ...(updated && updated.id ? updated : {}) } : l)),
+      )
+      return true
     } catch (error) {
       console.error('Failed to update link', error)
+      return false
     }
   }
 
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`/api/links/${id}`, {
-        method: 'DELETE',
-      })
+      const res = await fetch(`/api/links/${id}`, { method: 'DELETE' })
       if (res.ok) {
-        setLinks(links.filter(l => l.id !== id))
+        setLinks(prev => prev.filter(l => l.id !== id))
+      } else {
+        console.error('Failed to delete link', await res.json().catch(() => ({})))
       }
     } catch (error) {
       console.error('Failed to delete link', error)
     }
+  }
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+    router.push('/login')
+    router.refresh()
   }
 
   const handleLinkAdded = (newLink: Link) => {
@@ -120,6 +144,15 @@ export default function Dashboard() {
               Upload Image
             </button>
             <BackupRestore onRestoreComplete={handleRestoreComplete} />
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-red-700 hover:text-white"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
           </div>
         </header>
 
