@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, Clipboard, ImageUp, Loader2, X, XCircle } from 'lucide-react'
+import { collectClipboardImages } from '@/lib/clipboard'
 import type { UploadToast } from './useImageUpload'
 
 interface ImageDropZoneProps {
@@ -15,8 +16,9 @@ interface ImageDropZoneProps {
 }
 
 /**
- * Makes the whole dashboard a drop target for images and renders upload
- * feedback. The trigger button and upload logic live in `useImageUpload`.
+ * Makes the whole dashboard a drop target for images (and a paste target for
+ * clipboard images) and renders upload feedback. The trigger button and upload
+ * logic live in `useImageUpload`.
  */
 export default function ImageDropZone({
   onFiles,
@@ -55,15 +57,28 @@ export default function ImageDropZone({
       if (e.dataTransfer?.files?.length) onFiles(e.dataTransfer.files)
     }
 
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items?.length) return
+      const images = collectClipboardImages(items)
+      // Pasting text into a field must keep working, so only intercept when the
+      // clipboard actually holds an image.
+      if (images.length === 0) return
+      e.preventDefault()
+      onFiles(images)
+    }
+
     window.addEventListener('dragenter', onDragEnter)
     window.addEventListener('dragover', onDragOver)
     window.addEventListener('dragleave', onDragLeave)
     window.addEventListener('drop', onDrop)
+    window.addEventListener('paste', onPaste)
     return () => {
       window.removeEventListener('dragenter', onDragEnter)
       window.removeEventListener('dragover', onDragOver)
       window.removeEventListener('dragleave', onDragLeave)
       window.removeEventListener('drop', onDrop)
+      window.removeEventListener('paste', onPaste)
     }
   }, [onFiles])
 
@@ -77,6 +92,7 @@ export default function ImageDropZone({
             <ImageUp className="h-10 w-10 text-blue-400" />
             <p className="text-lg font-semibold text-white">Drop to upload</p>
             <p className="text-sm text-gray-400">Images go to ImgBB and are saved to your vault</p>
+            <p className="text-xs text-gray-500">Tip: Ctrl+V also works</p>
           </div>
         </div>
       )}

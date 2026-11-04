@@ -95,7 +95,7 @@ export default function Dashboard() {
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-800 pb-6">
           <div>
              <h1 className="text-3xl font-bold tracking-tight text-white">Link Vault</h1>
-             <p className="text-gray-400 mt-1">Personal Knowledge Hub · drop an image anywhere, or use Upload Image</p>
+             <p className="text-gray-400 mt-1">Personal Knowledge Hub · drop or paste an image, or use Upload Image</p>
           </div>
           <div className="flex items-center gap-4">
             <button

@@ -28,7 +28,7 @@ Say goodbye to "I'll read this later" disappearing into the void.
 *   **Live Search**: Instantly filter your library by title, URL, or category.
 *   **Inline Editing**: Fix typos or update categories without leaving the dashboard.
 *   **Safety First**: Confirmation prompts preventing accidental deletions.
-*   **Drag & Drop Image Hosting**: Drop an image anywhere on the dashboard and it is uploaded to [ImgBB](https://imgbb.com/) and saved as a vault entry with its hosted URL.
+*   **Drag, Drop & Paste Image Hosting**: Drop an image anywhere on the dashboard — or paste one with `Ctrl+V` — and it is uploaded to [ImgBB](https://imgbb.com/) and saved as a vault entry with its hosted URL.
 
 ### 💾 **Data Sovereignty**
 *   **Multi-Database Support**: Choose between **Supabase (PostgreSQL)** or **Turso (SQLite)** using the `DB_PROVIDER` setting.
@@ -145,9 +145,13 @@ No test needs a real ImgBB key or network access.
 3.  **Save**: Hit Enter or click the `+` button. The **Title** ID increments automatically!
 
 ### Uploading an Image
-1.  **Drag** any image file (PNG, JPEG, GIF, WebP, BMP, TIFF, AVIF, SVG — up to 32 MB) onto the dashboard.
-2.  **Drop** it: the file is sent to `/api/upload`, uploaded to ImgBB with your server-side key.
-3.  **Done**: it appears in the table as a new entry categorised `🖼️ #Image`. A toast shows the
+Three ways, all identical under the hood:
+*   **Upload Image** button in the header — opens a file picker (multi-select).
+*   **Drag & drop** any image file (PNG, JPEG, GIF, WebP, BMP, TIFF, AVIF, SVG — up to 32 MB) anywhere on the dashboard.
+*   **Paste** with `Ctrl+V` / `Cmd+V` when the clipboard holds an image (a screenshot, a copied picture, "Copy image" from a browser). Pasting text or URLs into the fields still works normally.
+
+The file is sent to `/api/upload`, uploaded to ImgBB with your server-side key.
+It then appears in the table as a new entry categorised `🖼️ #Image`. A toast shows the
     hosted URL with a one-click copy button.
 
 The ImgBB API key stays on the server. The browser never receives it — the client only talks to
