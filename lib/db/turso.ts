@@ -1,5 +1,5 @@
 import { createClient, Client } from '@libsql/client';
-import { DbClient, Link, LinkInsert, LinkUpdate } from '../db';
+import { DbClient, Link, LinkInsert, LinkUpdate, nextNumericIdFromTitles } from '../db';
 
 let tursoClient: Client | null = null;
 
@@ -146,30 +146,10 @@ export class TursoDbClient implements DbClient {
 
   async getNextNumericId(): Promise<number> {
     const client = getTursoClient();
-    try {
-      // Find the maximum title that consists only of digits
-      // GLOB '*[0-9]*' ensures it has digits, but to ensure it ONLY has digits in SQLite,
-      // we check that CAST(title AS INTEGER) is not 0 for non-zero strings or similar tricks,
-      // but a simple approach for SQLite without REGEXP:
-      // Since `title` containing only digits will convert to an integer nicely, we can do:
-      // TRIM + GLOB rather than `title = CAST(CAST(title AS INTEGER) AS TEXT)`: the old comparison
-      // silently dropped padded or spaced titles ('007', ' 42 '), so a restored backup could make
-      // the counter jump backwards and hand out numbers that already exist.
-      const { rows } = await client.execute({
-        sql: `SELECT MAX(CAST(TRIM(title) AS INTEGER)) as maxId
-               FROM links
-               WHERE TRIM(title) <> '' AND TRIM(title) NOT GLOB '*[^0-9]*'`
-      });
-
-      const maxId = rows[0]?.maxId;
-      if (maxId === null || maxId === undefined) {
-        return 1;
-      }
-      return (Number(maxId) || 0) + 1;
-    } catch (error) {
-      console.error('Error fetching next ID from Turso:', error);
-      return 1;
-    }
+    // Errors propagate on purpose. This used to catch everything and return 1, which turned any
+    // hiccup into "save this upload as entry #1" instead of a visible failure.
+    const { rows } = await client.execute('SELECT title FROM links');
+    return nextNumericIdFromTitles(rows.map(row => row.title));
   }
 
   async getAllLinksForBackup(): Promise<Link[]> {

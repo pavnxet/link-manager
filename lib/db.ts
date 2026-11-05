@@ -33,6 +33,28 @@ export interface DbClient {
   bulkInsertLinks(links: LinkInsert[]): Promise<{ success: boolean; count: number }>;
 }
 
+/**
+ * Highest numeric title + 1, computed in JS from whatever the database returns.
+ *
+ * Doing this in the application instead of SQL removes a whole class of bugs: `CAST(title AS
+ * INTEGER)` and `GLOB` predicates quietly exclude padded, spaced, NBSP-padded or BLOB titles, and
+ * when they excluded *everything* the counter fell back to 1 — so a fresh upload was saved as
+ * entry "1" next to 365 existing links.
+ *
+ * Accepts strings, numbers and Buffers (a restored backup can hand back any of them).
+ */
+export function nextNumericIdFromTitles(titles: Iterable<unknown>): number {
+  let max = 0
+  for (const raw of titles) {
+    if (raw === null || raw === undefined) continue
+    const trimmed = (typeof raw === 'string' ? raw : String(raw)).trim()
+    if (!/^\d+$/.test(trimmed)) continue
+    const value = Number(trimmed)
+    if (Number.isSafeInteger(value) && value > max) max = value
+  }
+  return max + 1
+}
+
 let dbClientInstance: DbClient | null = null;
 
 export async function getDb(): Promise<DbClient> {

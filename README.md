@@ -217,7 +217,7 @@ All routes require a valid session cookie. Unauthenticated API calls get `401` J
 | `POST` | `/api/auth/logout` | — | Clears the cookie |
 | `GET` | `/api/links?q=` | search term | `Link[]` |
 | `POST` | `/api/links` | `{title, url, page_title?, category?}` | `201` link · `400` invalid · `409` duplicate URL |
-| `GET` | `/api/links/next-id` | — | `{nextId}` |
+| `GET` | `/api/links/next-id` | — | `{nextId}` · `500` if the vault cannot be read (never guesses) |
 | `PUT` | `/api/links/:id` | any of the link fields | Updated link · `404` · `409` |
 | `DELETE` | `/api/links/:id` | — | `{success:true}` · `404` |
 | `POST` | `/api/scrape` | `{url}` | `{title, category, url}` · `400` blocked/invalid |

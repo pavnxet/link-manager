@@ -71,9 +71,26 @@ export async function POST(req: Request) {
   }
 
   // The image is hosted now; save it in the vault as a link entry.
+  let nextId: number
   try {
     const db = await getDb()
-    const nextId = await db.getNextNumericId()
+    nextId = await db.getNextNumericId()
+  } catch (err: unknown) {
+    // Never guess a number here: guessing "1" is how an upload once landed as entry #1 in a vault
+    // of 365 links. The image is safe on ImgBB, so hand the URL back and let the user retry.
+    console.error('Could not read the next id; refusing to save with a guessed number:', err)
+    return NextResponse.json(
+      {
+        image,
+        link: null,
+        warning: 'Image uploaded, but the next number could not be read — it was not saved to your vault.',
+      },
+      { status: 201 },
+    )
+  }
+
+  try {
+    const db = await getDb()
     const link = await db.addLink({
       title: String(nextId),
       page_title: file.name || 'Uploaded image',

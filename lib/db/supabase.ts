@@ -1,5 +1,5 @@
 import { getSupabase } from '../supabase';
-import { DbClient, Link, LinkInsert, LinkUpdate } from '../db';
+import { DbClient, Link, LinkInsert, LinkUpdate, nextNumericIdFromTitles } from '../db';
 
 /** PostgREST treats these as filter syntax, so a search containing them produced a 500. */
 function filterTerm(query: string): string {
@@ -96,14 +96,14 @@ export class SupabaseDbClient implements DbClient {
   }
 
   async getNextNumericId(): Promise<number> {
-    const { data: maxId, error } = await getSupabase().rpc('get_max_numeric_id');
+    // Same calculation as the Turso adapter, and no dependency on the SQL function being installed.
+    const { data, error } = await getSupabase().from('links').select('title');
 
     if (error) {
-      console.error('Error fetching next ID via RPC:', error);
-      return 1;
+      throw error;
     }
 
-    return (maxId || 0) + 1;
+    return nextNumericIdFromTitles((data ?? []).map(row => row.title));
   }
 
   async getAllLinksForBackup(): Promise<Link[]> {

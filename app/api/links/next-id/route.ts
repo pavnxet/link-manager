@@ -10,7 +10,8 @@ export async function GET() {
 
     return NextResponse.json({ nextId })
   } catch (error) {
+    // Answering with 1 here put "1" in the form and the next save duplicated it.
     console.error('Next ID error:', error)
-    return NextResponse.json({ nextId: 1 })
+    return NextResponse.json({ error: 'Could not read the next number' }, { status: 500 })
   }
 }

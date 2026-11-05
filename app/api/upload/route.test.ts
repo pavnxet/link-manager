@@ -182,3 +182,34 @@ describe('POST /api/upload', () => {
     assert.match(data.warning, /could not be saved/i)
   })
 })
+
+describe('POST /api/upload when the counter is broken', () => {
+  before(() => {
+    // Same ImgBB stub as above: this block lives outside that describe, so it needs its own.
+    globalThis.fetch = (async () => imgbbResponse()) as unknown as typeof fetch
+  })
+
+  after(() => {
+    globalThis.fetch = realFetch
+  })
+
+  it('returns the hosted URL without saving a guessed number', async () => {
+    // Drop the table so reading the next id fails, the way a transient database error would.
+    const client = createClient({ url: `file:${DB_FILE}` })
+    await client.execute('DROP TABLE links')
+    client.close()
+
+    const res = await POST(uploadRequest(pngFile('broken.png')))
+    assert.strictEqual(res.status, 201, 'the image is already on ImgBB; do not lose it')
+
+    const data = await res.json()
+    assert.strictEqual(data.link, null, 'nothing may be saved when the number is unknown')
+    assert.strictEqual(data.image.url, IMGBB_URL)
+    assert.match(data.warning, /next number could not be read/i)
+
+    const check = createClient({ url: `file:${DB_FILE}` })
+    const { rows } = await check.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='links'")
+    check.close()
+    assert.strictEqual(rows.length, 0, 'no row could have been written')
+  })
+})
